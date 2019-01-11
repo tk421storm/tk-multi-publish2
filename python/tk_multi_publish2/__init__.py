@@ -24,6 +24,14 @@ def show_dialog(app):
     from .dialog import AppDialog
 
     display_name = sgtk.platform.current_bundle().get_setting("display_name")
+    
+    #store publish logs alongside other phosphene logs, enable bug submit
+    logger = sgtk.platform.get_logger(__name__)
+    print "hooking phosphene logs into "+str(logger)
+    phospheneDebugHandler=sgtk.custom_debug_handler
+    logger.addHandler(phospheneDebugHandler)
+    
+    logger.info('Phosphene publish loaded')
 
     # start ui
     app.engine.show_dialog(display_name, app, AppDialog)
