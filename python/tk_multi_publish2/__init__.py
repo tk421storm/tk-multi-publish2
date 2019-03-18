@@ -27,9 +27,12 @@ def show_dialog(app):
     
     #store publish logs alongside other phosphene logs, enable bug submit
     logger = sgtk.platform.get_logger(__name__)
-    print "hooking phosphene logs into "+str(logger)
-    phospheneDebugHandler=sgtk.custom_debug_handler
-    logger.addHandler(phospheneDebugHandler)
+    try:
+	    phospheneDebugHandler=sgtk.custom_debug_handler
+	    print "hooking phosphene logs into "+str(logger)
+	    logger.addHandler(phospheneDebugHandler)
+    except:
+		pass
     
     logger.info('Phosphene publish loaded')
 

@@ -101,6 +101,13 @@ configuration:
            main dialog to drop files or folders. The user can also use the browse
            buttons to select files or folders. When false, the feature basically
            disable the user ability to add anything to the project."
+           
+#Millspaugh - add hiero get shot hook (ported from tk-hiero-export)
+    hook_get_shot:
+        type: hook
+        description: 
+          "Attempt to identify a hiero track item as a SG shot (from tk-hiero-export)"
+        default_value: "{self}/hiero_get_shot.py"
 
 # the Shotgun fields that this app needs in order to operate correctly
 requires_shotgun_fields:
