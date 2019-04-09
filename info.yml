@@ -11,13 +11,13 @@
 configuration:
     display_name:
         type: str
-        default_value: Publish
+        default_value: Elements Ingest
         description: Specify the name that should be used in menus and the main
                      publish dialog
 
     display_action_name:
         type: str
-        default_value: Publish
+        default_value: Ingest as Elements
         description: "Shorter version of display_name setting, used as button name."
 
     collector:
@@ -113,8 +113,8 @@ configuration:
 requires_shotgun_fields:
 
 # More verbose description of this item 
-display_name: "Publish"
-description: "Provides UI and functionality to publish files to Shotgun."
+display_name: "Ingest Elements"
+description: "Provides UI and functionality to publish Elements to Shotgun."
 
 # Required minimum versions for this item to run
 requires_shotgun_version:

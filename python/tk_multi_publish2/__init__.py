@@ -34,7 +34,7 @@ def show_dialog(app):
     except:
 		pass
     
-    logger.info('Phosphene publish loaded')
+    logger.info('Phosphene Elements Ingest loaded')
 
     # start ui
     app.engine.show_dialog(display_name, app, AppDialog)
