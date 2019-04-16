@@ -227,7 +227,7 @@ class PublishPluginInstance(PluginInstanceBase):
         with self._handle_plugin_error(None, "Error laying out widgets: %s"):
             return self._hook_instance.create_settings_widget(parent)
 
-    def run_get_ui_settings(self, parent):
+    def run_get_ui_settings(self, selected_tasks, parent):
         """
         Retrieves the settings from the custom UI.
 
@@ -242,9 +242,9 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error reading settings from UI: %s"):
-            return self._hook_instance.get_ui_settings(parent)
+            return self._hook_instance.get_ui_settings(selected_tasks, parent)
 
-    def run_set_ui_settings(self, parent, settings):
+    def run_set_ui_settings(self, parent, settings, selected_tasks):
         """
         Provides a list of settings from the custom UI. It is the responsibility of the UI
         handle different values for the same setting.
@@ -261,7 +261,7 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error writing settings to UI: %s"):
-            self._hook_instance.set_ui_settings(parent, settings)
+            self._hook_instance.set_ui_settings(parent, settings, selected_tasks)
 
     @contextmanager
     def _handle_plugin_error(self, success_msg, error_msg):

@@ -44,13 +44,16 @@ class AppDialog(QtGui.QWidget):
 	"""
 
 	# main drag and drop areas
-	(DRAG_SCREEN, PUBLISH_SCREEN) = range(2)
+	(SELECT_DELIVERY_SCREEN, DRAG_SCREEN, PUBLISH_SCREEN) = range(3)
 
 	# details ui panes
 	(ITEM_DETAILS, TASK_DETAILS, PLEASE_SELECT_DETAILS, MULTI_EDIT_NOT_SUPPORTED) = range(4)
 	
 	#update the list of valid delivery methods during init
 	deliveryMethods=QtCore.Signal(object)
+	
+	#update the list of valid delivery types during init
+	deliveryTypes=QtCore.Signal(object)
 
 	def __init__(self, parent=None):
 		"""
@@ -75,14 +78,12 @@ class AppDialog(QtGui.QWidget):
 		self._bundle = sgtk.platform.current_bundle()
 		self._validation_run = False
 		
-		self.setupElementsIngest(parent)
+		#store the parent for later reference (some reason different than self.parent)
+		self.dialogParent=parent
 		
 		# set up the UI
 		self.ui = Ui_Dialog()
 		self.ui.setupUi(self)
-		
-		#send UI values for delivery method
-		self.deliveryMethods.emit(self.deliveryMethodValues)
 
 		self.ui.context_widget.set_up(self._task_manager)
 
@@ -263,16 +264,28 @@ class AppDialog(QtGui.QWidget):
 		# the browse button in the button container
 		self.ui.text_below_item_tree.setVisible(self.manual_load_enabled)
 		self.ui.browse.setVisible(self.manual_load_enabled)
+		
+		#setup elements-specific implmentation		
+		self.setupElementsIngest(parent)
+		
+		#send UI values for delivery
+		self.deliveryMethods.emit(self.deliveryMethodValues)
+		self.deliveryTypes.emit(self.deliveryTypeValues)
+		
+		#attach deliveryType comboBox to "select delivery type" overlay
+		self.ui.deliveryType.currentIndexChanged.connect(self.show_select_delivery_overlay)
 
 		# run collections
 		self._full_rebuild()
-		
+
+
 	def setupElementsIngest(self, parent):
 		
 		#set up delivery method field in phosphene ui with valid values for this project
 		#of course, the internal shotgun method fails if you clear your local cache, so we'll just do it the right way
 		#self.deliveryMethodValues=shotgun_globals.get_valid_values('Delivery', 'sg_delivery_method', project_id=self._bundle.sgtk.pipeline_configuration._project_id)
 		self.deliveryMethodValues=self._bundle.sgtk.shotgun.schema_field_read('Delivery')['sg_delivery_method']['properties']['valid_values']['value']
+		self.deliveryTypeValues=self._bundle.sgtk.shotgun.schema_field_read('Delivery')['sg_delivery_type']['properties']['valid_values']['value']
 
 		#get a list of element types from shotgun, attempt to compare it to per-project yaml
 		#self.elementTypes=shotgun_globals.get_valid_values('Element', 'sg_element_type', project_id=self._bundle.sgtk.pipeline_configuration._project_id)
@@ -326,7 +339,7 @@ class AppDialog(QtGui.QWidget):
 				removeFromElementExtensions.append(elementType)
 				
 		for item in removeFromElementExtensions:
-			del self.elementExtensions[item]
+			del self.elementExtensions[item]				
 			
 		for deliveryType in self.deliveryElementLocations:
 			removeFromTypeDict=[]
@@ -337,6 +350,17 @@ class AppDialog(QtGui.QWidget):
 					
 			for elementType in removeFromTypeDict:
 				del dicter[elementType]
+				
+		#here we'll make sure we have a yaml config definition for each delivery type we found from shotgun
+		#if we don't, well delete the options from deliveryTypeValues, but not worry about it
+		#deliveries can be outgoing as well, so any delivery not defined in yaml is assumed to be outgoing
+		outgoingTypes=[]
+		for deliveryType in self.deliveryTypeValues:
+			if deliveryType not in self.deliveryElementLocations:
+				outgoingTypes.append(deliveryType)
+				
+		for deliveryType in outgoingTypes:
+			self.deliveryTypeValues.remove(deliveryType)
 				
 		#verify that each key under self.deliveryElementLocations has a cooresponding definition key in self.elementExtensionKeys
 		undefinedExtensions=[]
@@ -386,14 +410,32 @@ class AppDialog(QtGui.QWidget):
 		print "   element types:"
 		pprint(self.elementTypes)
 		print "----------"
-		print "   deliveryElementLocations:"
-		pprint(self.deliveryElementLocations)
-		print "----------"
 		print "   elementExtensions:"
 		pprint(self.elementExtensions)
 		print "----------"
+		print "   deliveryElementLocations:"
+		pprint(self.deliveryElementLocations)
+		print "----------"
 		print "   elementExtensionKeys:"
 		pprint(self.elementExtensionKeys)
+		
+	def show_select_delivery_overlay(self, object):
+		'''fired when the user changes the delivery type, if they select one, show the drag/drop files widget, otherwise show the warning'''
+		
+		print ""
+		
+		if self.ui.deliveryType.currentText():
+			if self.ui.main_stack.currentIndex()!=self.PUBLISH_SCREEN:
+				self.ui.main_stack.setCurrentIndex(self.DRAG_SCREEN)
+		else:
+			self.ui.main_stack.setCurrentIndex(self.SELECT_DELIVERY_SCREEN)
+			
+	def updateChildInfo(self, child):
+		'''passed a PublishItem from the tree, make sure it contains up-to-date info from the overall deliveries dialog'''
+		
+		child.properties['deliveryType']=self.ui.deliveryType.currentText()
+		child.properties['elementTypes']=self.elementTypes
+			
 
 	@property
 	def manual_load_enabled(self):
@@ -587,15 +629,23 @@ class AppDialog(QtGui.QWidget):
 		"""
 		if selected_tasks.has_custom_ui:
 			widget = self.ui.task_settings.widget
-			settings = self._current_tasks.get_settings(widget)
+			
+			#instead of returning just one settings dict, get_settings will return a dict of task.name : settings dict
+			#so we can set each tasks' settings differently
+			allTaskSettings = self._current_tasks.get_settings(selected_tasks, widget)
 		else:
 			# TODO: Implement getting the settings from the generic UI, if we ever implement one.
-			settings = {}
+			allTaskSettings = {}
 
 		# Update the values in all the tasks.
 		for task in selected_tasks:
 			# The settings returned by the UI are actual value, not Settings objects, so apply each
 			# value returned on the appropriate settings object.
+			
+			#get the corresponding item name for the task
+			itemName=task.item.name
+			
+			settings=allTaskSettings[itemName]
 			for k, v in settings.iteritems():
 				task.settings[k].value = v
 
@@ -617,7 +667,8 @@ class AppDialog(QtGui.QWidget):
 
 		if selected_tasks.has_custom_ui:
 			try:
-				selected_tasks.set_settings(self.ui.task_settings.widget, tasks_settings)
+				#PHOSPHENE- also pass tasks, for more complex per-item settings
+				selected_tasks.set_settings(self.ui.task_settings.widget, tasks_settings, selected_tasks)
 			except NotImplementedError:
 				self.ui.details_stack.setCurrentIndex(self.MULTI_EDIT_NOT_SUPPORTED)
 				return False
@@ -924,6 +975,11 @@ class AppDialog(QtGui.QWidget):
 		if not self.manual_load_enabled:
 			self._progress_handler.logger.error("Drag & drop disabled.")
 			return
+		
+		# make sure we have a delivery type first (will also ensure root item has appropriate variables
+		if not self.deliveryTypeCheck():
+			self._progress_handler.logger.error("Please select a delivery type before adding files.")
+			return
 
 		# add files and rebuild tree
 		self._progress_handler.set_phase(self._progress_handler.PHASE_LOAD)
@@ -948,6 +1004,7 @@ class AppDialog(QtGui.QWidget):
 			self._overlay.show_loading()
 			self.ui.button_container.hide()
 			new_items = self._publish_manager.collect_files(str_files)
+			
 			num_items_created = len(new_items)
 			num_errors = self._progress_handler.pop()
 
@@ -1004,7 +1061,10 @@ class AppDialog(QtGui.QWidget):
 				self._show_no_items_error()
 			else:
 				# nothing in list. show the full screen drag and drop ui
-				self.ui.main_stack.setCurrentIndex(self.DRAG_SCREEN)
+				if self.ui.deliveryType.currentText():
+					self.ui.main_stack.setCurrentIndex(self.DRAG_SCREEN)
+				else:
+					self.ui.main_stack.setCurrentIndex(self.SELECT_DELIVERY_SCREEN)
 
 				# ensure the progress details widget is available for overlay on the
 				# drop area
@@ -1123,12 +1183,46 @@ class AppDialog(QtGui.QWidget):
 				if child.checked:
 					# child is ticked
 					total_number_nodes += 1
+					
+					#update item with info from dialog
+					self.updateChildInfo(child)
 				total_number_nodes += _begin_process_r(child)
 			return total_number_nodes
 
 		total_number_nodes = _begin_process_r(parent)
 		# reset progress bar
 		self._progress_handler.reset_progress(total_number_nodes * number_phases)
+		
+	def deliveryTypeCheck(self):
+		'''ensure the user has picked a delivery type, warn them if they haven't
+		
+		   if they have, ensure the root item in the publish tree has the updated values from the dialog, as well as our variables from yaml
+		
+		   return deliveryType (will be '' if no type selected)
+		'''
+		
+		deliveryType=self.ui.deliveryType.currentText()
+		
+		if not deliveryType:
+			errorMessage=QtGui.QMessageBox(parent=self.dialogParent)
+			errorMessage.setIcon(QtGui.QMessageBox.Warning)
+			errorMessage.setWindowTitle('No Delivery Type')
+			errorMessage.setText('Please select a delivery type before validating or publishing.')
+			errorMessage.setStandardButtons(QtGui.QMessageBox.Ok)
+			errorMessage.exec_()
+		else:
+			self._publish_manager._tree._root_item.properties['deliveryElementLocations']=self.deliveryElementLocations
+			self._publish_manager._tree._root_item.properties['elementExtensions']=self.elementExtensions
+			self._publish_manager._tree._root_item.properties['elementExtensionKeys']=self.elementExtensionKeys
+			
+			#also store values from ui on root item
+			self._publish_manager._tree._root_item.properties['deliveryType']=deliveryType
+			self._publish_manager._tree._root_item.properties['deliveryName']=self.ui.deliveryName.text()
+			self._publish_manager._tree._root_item.properties['deliveryMethod']=self.ui.deliveryMethod.currentText()
+			self._publish_manager._tree._root_item.properties['deliveryDescription']=self.ui.deliveryDescription.toPlainText()
+		
+			
+		return deliveryType
 
 	def do_validate(self, is_standalone=True):
 		"""
@@ -1138,7 +1232,12 @@ class AppDialog(QtGui.QWidget):
 			not part of a publish workflow.
 		:returns: number of issues reported
 		"""
-
+		
+		#PHOSPHENE - make sure the user has selected a delivery type first!
+		deliveryType=self.deliveryTypeCheck()
+		if not deliveryType:
+			return 0
+		
 		# Make sure that settings from the current selection are retrieved from the UI and applied
 		# back on the tasks.
 		self._pull_settings_from_ui(self._current_tasks)
@@ -1181,6 +1280,11 @@ class AppDialog(QtGui.QWidget):
 		"""
 		Perform a full publish
 		"""
+		#PHOSPHENE - make sure the user has selected a delivery type first!
+		deliveryType=self.deliveryTypeCheck()
+		if not deliveryType:
+			return
+		
 		publish_failed = False
 
 		# hide the action buttons during publish
@@ -1633,11 +1737,26 @@ class AppDialog(QtGui.QWidget):
 		else:
 			warnings.append('Supplied configuration file did not define required dictionary deliveryElementLocations')
 			
-		if 'elementExtensions' in configDict:
-			self.elementExtensions=copy(configDict['elementExtensions'])
-			del configDict['elementExtensions']
-		else:
-			warnings.append('Supplied configuration file did not define required dictionary elementExtensions')
+		#if 'elementExtensions' in configDict:
+		#	self.elementExtensions=copy(configDict['elementExtensions'])
+		#	del configDict['elementExtensions']
+		#else:
+		#	warnings.append('Supplied configuration file did not define required dictionary elementExtensions')
+			
+		#instead of relying on the yaml to contain an elementExtensions dict, we'll build one with deliveryElementLocations
+		self.elementExtensions={}
+		
+		for deliveryType in self.deliveryElementLocations:
+			elementDict=self.deliveryElementLocations[deliveryType]
+			for elementType in elementDict:
+				if elementType not in self.elementExtensions:
+					self.elementExtensions[elementType]=[]
+					
+				fileExtensionsDict=elementDict[elementType]
+				
+				for fileType in fileExtensionsDict:
+					if fileType not in self.elementExtensions[elementType]:
+						self.elementExtensions[elementType].append(fileType)
 			
 		#at this point we should be left with a dictionary of filetype : list of acceptable extensions
 		self.elementExtensionKeys=copy(configDict)
@@ -1701,7 +1820,7 @@ class _TaskSelection(object):
 		else:
 			return None
 
-	def get_settings(self, widget):
+	def get_settings(self, selected_tasks, widget):
 		"""
 		Retrieves the settings from the selection's custom UI.
 
@@ -1710,11 +1829,11 @@ class _TaskSelection(object):
 		:returns: Dictionary of settings as regular Python literals.
 		"""
 		if self._items:
-			return self._items[0].plugin.run_get_ui_settings(widget)
+			return self._items[0].plugin.run_get_ui_settings(selected_tasks, widget)
 		else:
 			return {}
 
-	def set_settings(self, widget, settings):
+	def set_settings(self, widget, settings, selected_tasks):
 		"""
 		Sets the settings from the selection into the custom UI.
 
@@ -1722,7 +1841,7 @@ class _TaskSelection(object):
 		:param settings: List of settings for all tasks.
 		"""
 		if self._items:
-			self._items[0].plugin.run_set_ui_settings(widget, settings)
+			self._items[0].plugin.run_set_ui_settings(widget, settings, selected_tasks)
 
 	def __iter__(self):
 		"""

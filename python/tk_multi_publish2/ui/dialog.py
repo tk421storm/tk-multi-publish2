@@ -7,10 +7,14 @@
 # WARNING! All changes made in this file will be lost!
 
 from tank.platform.qt import QtCore, QtGui
-from os.path import dirname, realpath, join
+from os.path import dirname, realpath, join, exists
 
 #get this modules install location
 currentRoot=dirname(realpath(__file__))
+
+phospheneHeader=join(dirname(dirname(dirname(currentRoot))), "resources", "phospheneHeader.png")
+phospheneHeaderBottom=join(dirname(dirname(dirname(currentRoot))), "resources", "phospheneHeader-bottom.png")
+
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
@@ -22,6 +26,29 @@ class Ui_Dialog(object):
 		self.verticalLayout_7.setObjectName("verticalLayout_7")
 		self.main_stack = QtGui.QStackedWidget(Dialog)
 		self.main_stack.setObjectName("main_stack")
+		
+		#create a "select delivery type screen" widget to show first
+		topBackground=QtGui.QPixmap(phospheneHeaderBottom)
+		bgPalatte=QtGui.QPalette()
+		bgPalatte.setBrush(QtGui.QPalette.Window, topBackground)
+		
+		self.select_delivery_frame = QtGui.QWidget()
+		self.select_delivery_frame.setObjectName("select_delivery_type_frame")
+		self.select_delivery_frame.setPalette(bgPalatte)
+		self.select_delivery_frame.setAutoFillBackground(True)
+		
+		self.verticalLayoutDelivery = QtGui.QVBoxLayout(self.select_delivery_frame)
+		self.verticalLayoutDelivery.setSpacing(0)
+		self.verticalLayoutDelivery.setObjectName("verticalLayoutDelivery")
+		self.select_delivery=QtGui.QLabel('Please select a delivery type before adding files.')
+		self.select_delivery.setStyleSheet("QLabel {\n"
+"	font-size: 24px;\n"
+"}")
+		self.select_delivery.setAlignment(QtCore.Qt.AlignCenter)
+		self.verticalLayoutDelivery.addWidget(self.select_delivery)
+		self.select_delivery_frame.setLayout(self.verticalLayoutDelivery)
+		self.main_stack.addWidget(self.select_delivery_frame)
+		
 		self.large_drop_area_frame = QtGui.QWidget()
 		self.large_drop_area_frame.setObjectName("large_drop_area_frame")
 		self.verticalLayout_3 = QtGui.QVBoxLayout(self.large_drop_area_frame)
@@ -239,8 +266,8 @@ class Ui_Dialog(object):
 		self.verticalLayout_6.addWidget(self.context_widget)
 				
 		#add Millspaugh task update dialog
-		self.taskWidget=TaskUpdate(self)
-		self.verticalLayout_6.addWidget(self.taskWidget)
+		#self.taskWidget=TaskUpdate(self)
+		#self.verticalLayout_6.addWidget(self.taskWidget)
 		
 		self.gridLayout_3 = QtGui.QGridLayout()
 		self.gridLayout_3.setObjectName("gridLayout_3")
@@ -509,13 +536,12 @@ class Ui_Dialog(object):
 		self.main_stack.addWidget(self.main_ui_frame)
 		
 		#Phosphene Ingest tool customization
-		background=QtGui.QPixmap(join(dirname(dirname(dirname(currentRoot))), "resources", "phospheneHeader.png"))
-		bgPalatte=QtGui.QPalette()
-		bgPalatte.setBrush(QtGui.QPalette.Window, background)
-		
+		background=QtGui.QPixmap(phospheneHeader)
+		bgPalatte2=QtGui.QPalette()
+		bgPalatte2.setBrush(QtGui.QPalette.Window, background)			
 		
 		self.deliveryWidget=QtGui.QWidget()
-		self.deliveryWidget.setPalette(bgPalatte)
+		self.deliveryWidget.setPalette(bgPalatte2)
 		self.deliveryWidget.setAutoFillBackground(True)
 		deliveryLayout=QtGui.QGridLayout()
 		
@@ -532,8 +558,7 @@ class Ui_Dialog(object):
 		
 		#type
 		self.deliveryType=QtGui.QComboBox()
-		for item in ['', 'Bid Package', 'Editorial Turnover', 'Footage Turnover', 'On-Set Data', 'Reference', 'Outsourcing']:
-			self.deliveryType.addItem(item)
+		Dialog.deliveryTypes.connect(self.updateDeliveryTypes)
 			
 		deliveryTypeLabel=QtGui.QLabel('Delivery Type: ')
 		deliveryTypeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignBottom)
@@ -567,7 +592,7 @@ class Ui_Dialog(object):
 		self.verticalLayout_7.addWidget(self.main_stack)
 
 		self.retranslateUi(Dialog)
-		self.main_stack.setCurrentIndex(1)
+		self.main_stack.setCurrentIndex(0)
 		self.details_stack.setCurrentIndex(1)
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 		Dialog.setTabOrder(self.item_comments, self.validate)
@@ -621,9 +646,15 @@ class Ui_Dialog(object):
 		
 	def updateDeliveryMethods(self, deliveryList):
 		deliveryList.insert(0, '')
-		print "recieved deliveryList: "+str(deliveryList)
+		#print "recieved deliveryList: "+str(deliveryList)
 		for item in deliveryList:#.insert(0, ''):
 			self.deliveryMethod.addItem(item)
+			
+	def updateDeliveryTypes(self, deliveryList):
+		deliveryList.insert(0, '')
+		#print "recieved deliveryList: "+str(deliveryList)
+		for item in deliveryList:#.insert(0, ''):
+			self.deliveryType.addItem(item)
 
 from ..thumbnail import Thumbnail
 from ..progress_status_label import ProgressStatusLabel
