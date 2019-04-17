@@ -171,6 +171,21 @@ class PublishTask(object):
             (with/without the UI).
         """
         return self._active
+       
+    def setActive(self, active_state):
+    	"""
+        Explicitly set the active state.
+
+        There are 3 active states that can be supplied:
+
+        * ``True``: Set the item to be active
+        * ``False``: Set the item to be inactive
+        * ``None``: Clear the item's state, rely on inheritance within the tree
+        
+        this function is not connected to any signals/slots, so it can be called without recursively calling other things
+        """
+    	#print "setActive called on "+str(self)+" with state: "+str(active_state)
+        self._active = active_state
 
     @active.setter
     def active(self, active_state):
@@ -183,6 +198,7 @@ class PublishTask(object):
         * ``False``: Set the item to be inactive
         * ``None``: Clear the item's state, rely on inheritance within the tree
         """
+        print "active called on "+str(self)+" with state: "+str(active_state)
         self._active = active_state
 
     @property

@@ -429,13 +429,6 @@ class AppDialog(QtGui.QWidget):
 				self.ui.main_stack.setCurrentIndex(self.DRAG_SCREEN)
 		else:
 			self.ui.main_stack.setCurrentIndex(self.SELECT_DELIVERY_SCREEN)
-			
-	def updateChildInfo(self, child):
-		'''passed a PublishItem from the tree, make sure it contains up-to-date info from the overall deliveries dialog'''
-		
-		child.properties['deliveryType']=self.ui.deliveryType.currentText()
-		child.properties['elementTypes']=self.elementTypes
-			
 
 	@property
 	def manual_load_enabled(self):
@@ -1183,9 +1176,6 @@ class AppDialog(QtGui.QWidget):
 				if child.checked:
 					# child is ticked
 					total_number_nodes += 1
-					
-					#update item with info from dialog
-					self.updateChildInfo(child)
 				total_number_nodes += _begin_process_r(child)
 			return total_number_nodes
 

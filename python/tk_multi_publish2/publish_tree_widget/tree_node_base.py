@@ -97,6 +97,12 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
         # do if for just this item
         # first store it in our data model
         self.setData(0, self.CHECKBOX_ROLE, state)
+        #the task doesn't get set to the right status, so we need to do it manually
+        try:
+            self.get_publish_instance().setActive(state)
+        except:
+        	pass
+        
         self._embedded_widget.set_checkbox_value(self.data(0, self.CHECKBOX_ROLE))
         if state == QtCore.Qt.Checked:
             # ensure all children are checked

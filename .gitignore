@@ -1,6 +1,7 @@
 *.py[cod]
 .DS_Store
 tk-metadata
+Thumbs.db
 
 # C extensions
 *.so

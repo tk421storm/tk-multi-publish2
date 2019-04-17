@@ -19,7 +19,7 @@ phospheneHeaderBottom=join(dirname(dirname(dirname(currentRoot))), "resources", 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
-		Dialog.resize(709, 588)
+		Dialog.resize(909, 588)
 		self.verticalLayout_7 = QtGui.QVBoxLayout(Dialog)
 		self.verticalLayout_7.setSpacing(0)
 		self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -588,6 +588,7 @@ class Ui_Dialog(object):
 		
 		deliveryLayout.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignBottom)
 		self.deliveryWidget.setLayout(deliveryLayout)
+		self.deliveryWidget.setSizePolicy(QtGui.QSizePolicy.MinimumExpanding, QtGui.QSizePolicy.Maximum)
 		self.verticalLayout_7.addWidget(self.deliveryWidget)
 		self.verticalLayout_7.addWidget(self.main_stack)
 
