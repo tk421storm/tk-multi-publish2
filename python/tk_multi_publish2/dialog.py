@@ -90,7 +90,7 @@ class AppDialog(QtGui.QWidget):
 		# only allow entities that can be linked to PublishedFile entities
 		#self.ui.context_widget.restrict_entity_types_by_link(
 		#	"PublishedFile", "entity")
-		self.ui.context_widget.restrict_entity_types(['Shot', 'Asset', 'Sequence', 'CustomEntity01'])
+		self.ui.context_widget.restrict_entity_types(['Shot', 'Asset', 'Sequence', 'CustomEntity01', 'Project'])
 
 		# tooltips for the task and link inputs
 		self.ui.context_widget.set_task_tooltip(
@@ -971,9 +971,7 @@ class AppDialog(QtGui.QWidget):
 			return
 		
 		# make sure we have a delivery type first (will also ensure root item has appropriate variables
-		if not self.deliveryTypeCheck():
-			self._progress_handler.logger.error("Please select a delivery type before adding files.")
-			return
+		self.deliveryTypeCheck(warn=False)
 
 		# add files and rebuild tree
 		self._progress_handler.set_phase(self._progress_handler.PHASE_LOAD)
@@ -1184,7 +1182,7 @@ class AppDialog(QtGui.QWidget):
 		# reset progress bar
 		self._progress_handler.reset_progress(total_number_nodes * number_phases)
 		
-	def deliveryTypeCheck(self):
+	def deliveryTypeCheck(self, warn=True):
 		'''ensure the user has picked a delivery type, warn them if they haven't
 		
 		   if they have, ensure the root item in the publish tree has the updated values from the dialog, as well as our variables from yaml
@@ -1193,27 +1191,32 @@ class AppDialog(QtGui.QWidget):
 		'''
 		
 		deliveryType=self.ui.deliveryType.currentText()
+		deliveryName=self.ui.deliveryName.text()
 		
-		if not deliveryType:
-			errorMessage=QtGui.QMessageBox(parent=self.dialogParent)
-			errorMessage.setIcon(QtGui.QMessageBox.Warning)
-			errorMessage.setWindowTitle('No Delivery Type')
-			errorMessage.setText('Please select a delivery type before validating or publishing.')
-			errorMessage.setStandardButtons(QtGui.QMessageBox.Ok)
-			errorMessage.exec_()
+		if not deliveryType or not deliveryName:
+			if warn:
+				errorMessage=QtGui.QMessageBox(parent=self.dialogParent)
+				errorMessage.setIcon(QtGui.QMessageBox.Warning)
+				errorMessage.setWindowTitle('Missing Delivery Information')
+				errorMessage.setText('Please name your delivery before validating or publishing.')
+				errorMessage.setStandardButtons(QtGui.QMessageBox.Ok)
+				errorMessage.exec_()
+				
+		itemList=[item for item in self._publish_manager._tree]+[self._publish_manager._tree._root_item]
+	
+		for item in itemList:
+			item.properties['deliveryElementLocations']=self.deliveryElementLocations
+			item.properties['elementExtensions']=self.elementExtensions
+			item.properties['elementExtensionKeys']=self.elementExtensionKeys
+			item.properties['deliveryType']=deliveryType
+			item.properties['deliveryName']=self.ui.deliveryName.text()
+			item.properties['deliveryMethod']=self.ui.deliveryMethod.currentText()
+			item.properties['deliveryDescription']=self.ui.deliveryDescription.toPlainText()
+			
+		if not deliveryType or not deliveryName:
+			return False
 		else:
-			self._publish_manager._tree._root_item.properties['deliveryElementLocations']=self.deliveryElementLocations
-			self._publish_manager._tree._root_item.properties['elementExtensions']=self.elementExtensions
-			self._publish_manager._tree._root_item.properties['elementExtensionKeys']=self.elementExtensionKeys
-			
-			#also store values from ui on root item
-			self._publish_manager._tree._root_item.properties['deliveryType']=deliveryType
-			self._publish_manager._tree._root_item.properties['deliveryName']=self.ui.deliveryName.text()
-			self._publish_manager._tree._root_item.properties['deliveryMethod']=self.ui.deliveryMethod.currentText()
-			self._publish_manager._tree._root_item.properties['deliveryDescription']=self.ui.deliveryDescription.toPlainText()
-		
-			
-		return deliveryType
+			return True
 
 	def do_validate(self, is_standalone=True):
 		"""
@@ -1264,6 +1267,9 @@ class AppDialog(QtGui.QWidget):
 
 		# remember that validation has completed at least once
 		self._validation_run = True
+		
+		#update the ui
+		self._push_settings_into_ui(self._current_tasks)
 
 		return num_issues
 
