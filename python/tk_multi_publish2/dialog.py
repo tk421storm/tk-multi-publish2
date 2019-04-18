@@ -88,8 +88,9 @@ class AppDialog(QtGui.QWidget):
 		self.ui.context_widget.set_up(self._task_manager)
 
 		# only allow entities that can be linked to PublishedFile entities
-		self.ui.context_widget.restrict_entity_types_by_link(
-			"PublishedFile", "entity")
+		#self.ui.context_widget.restrict_entity_types_by_link(
+		#	"PublishedFile", "entity")
+		self.ui.context_widget.restrict_entity_types(['Shot', 'Asset', 'Sequence', 'CustomEntity01'])
 
 		# tooltips for the task and link inputs
 		self.ui.context_widget.set_task_tooltip(
