@@ -90,7 +90,7 @@ class AppDialog(QtGui.QWidget):
 		# only allow entities that can be linked to PublishedFile entities
 		#self.ui.context_widget.restrict_entity_types_by_link(
 		#	"PublishedFile", "entity")
-		self.ui.context_widget.restrict_entity_types(['Shot', 'Asset', 'Sequence', 'CustomEntity01', 'Project'])
+		self.ui.context_widget.restrict_entity_types(['Shot', 'Asset', 'Sequence', 'CustomEntity01', 'Project', 'Element'])
 
 		# tooltips for the task and link inputs
 		self.ui.context_widget.set_task_tooltip(
@@ -1206,6 +1206,7 @@ class AppDialog(QtGui.QWidget):
 	
 		for item in itemList:
 			item.properties['deliveryElementLocations']=self.deliveryElementLocations
+			item.properties['defaultElementTypes']=self.defaultElementTypes
 			item.properties['elementExtensions']=self.elementExtensions
 			item.properties['elementExtensionKeys']=self.elementExtensionKeys
 			item.properties['deliveryType']=deliveryType
@@ -1302,7 +1303,7 @@ class AppDialog(QtGui.QWidget):
 				if self.do_validate(is_standalone=False) > 0:
 					self._progress_handler.logger.error(
 						"Validation errors detected. "
-						"Not proceeding with publish."
+						"Not proceeding with Ingest."
 					)
 					self.ui.button_container.show()
 					return
@@ -1352,7 +1353,7 @@ class AppDialog(QtGui.QWidget):
 				# ensure the full error shows up in the log file
 				logger.error("Publish error stack:\n%s" % (traceback.format_exc(),))
 				# and log to ui
-				self._progress_handler.logger.error("Error while publishing. Aborting.")
+				self._progress_handler.logger.error("Error while creating Elements. Aborting.")
 				publish_failed = True
 			finally:
 				self._progress_handler.pop()
@@ -1397,7 +1398,7 @@ class AppDialog(QtGui.QWidget):
 		self.ui.close.show()
 
 		if publish_failed:
-			self._progress_handler.logger.error("Publish Failed! For details, click here.")
+			self._progress_handler.logger.error("Element Ingest Failed! For details, click here.")
 			self._overlay.show_fail()
 		else:
 
@@ -1408,9 +1409,15 @@ class AppDialog(QtGui.QWidget):
 			except:
 				# ignore all errors. ex: using a core that doesn't support metrics
 				pass
-
-			self._progress_handler.logger.info("Publish Complete! For details, click here.")
-			self._overlay.show_success()
+			
+			#get the delivery id for the success overlay
+			deliveryID=None
+			for item in self._publish_manager.tree:
+				deliveryID=item.properties.get('deliveryID')
+				
+			self._progress_handler.logger.info("Element Ingest Complete! Click here to show details.")
+			
+			self._overlay.show_success(deliveryID)
 
 	def _publish_again_clicked(self):
 		"""
@@ -1734,11 +1741,11 @@ class AppDialog(QtGui.QWidget):
 		else:
 			warnings.append('Supplied configuration file did not define required dictionary deliveryElementLocations')
 			
-		#if 'elementExtensions' in configDict:
-		#	self.elementExtensions=copy(configDict['elementExtensions'])
-		#	del configDict['elementExtensions']
-		#else:
-		#	warnings.append('Supplied configuration file did not define required dictionary elementExtensions')
+		if 'defaultTypes' in configDict:
+			self.defaultElementTypes=copy(configDict['defaultTypes'])
+			del configDict['defaultTypes']
+		else:
+			self.defaultElementTypes={}
 			
 		#instead of relying on the yaml to contain an elementExtensions dict, we'll build one with deliveryElementLocations
 		self.elementExtensions={}
