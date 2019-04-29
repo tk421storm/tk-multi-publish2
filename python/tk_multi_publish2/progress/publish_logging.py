@@ -11,6 +11,9 @@
 
 import sgtk
 import logging
+from pprint import pprint
+
+from ..Debug import DebugHandler
 
 logger = sgtk.platform.get_logger(__name__)
 
@@ -28,6 +31,7 @@ class PublishLogHandler(logging.Handler):
         # avoiding super in order to be py25-compatible
         logging.Handler.__init__(self)
         self._progress_widget = progress_widget
+
 
     def emit(self, record):
         """
@@ -77,6 +81,14 @@ class PublishLogHandler(logging.Handler):
 
         # request that the log manager processes the message
         self._progress_widget.process_log_message(record.getMessage(), status, action)
+        
+        # these logs arent being propagated to the actual logger
+        #print "got log message from plugin: "+str(record.getMessage())
+        #pprint(vars(record))
+        #print "this logger is "+str(logger.name)
+        #this will cause freezes
+        #if self.rootLogger:
+        #    self.rootLogger.handle(record)
 
 
 class PublishLogWrapper(object):
@@ -105,18 +117,24 @@ class PublishLogWrapper(object):
         # more importantly, it will appear in the shotgun engine
         # in a dialog window after app exit which is non-ideal.
         self._logger.propagate = False
+        
+        #even negating this value does not allow publish logs to the root app log
 
         self._handler = PublishLogHandler(progress_widget)
+        
+        self._logger.addHandler(DebugHandler())
+        logger.debug("installed phosphene debug handler for plugin debug")
 
         # and handle it in the UI
         self._logger.addHandler(self._handler)
         logger.debug("Installed log handler for publishing @ %s" % full_log_path)
+        
 
         # log level follows the global settings
-        if sgtk.LogManager().global_debug:
-            self._handler.setLevel(logging.DEBUG)
-        else:
-            self._handler.setLevel(logging.INFO)
+        #if sgtk.LogManager().global_debug:
+        self._handler.setLevel(logging.DEBUG)
+        #else:
+        #    self._handler.setLevel(logging.INFO)
 
         formatter = logging.Formatter(
             "[%(levelname)s %(basename)s] %(message)s"

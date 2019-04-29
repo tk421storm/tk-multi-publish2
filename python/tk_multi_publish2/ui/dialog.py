@@ -235,8 +235,8 @@ class Ui_Dialog(object):
         self.verticalLayout_6.addWidget(self.context_widget)
                 
         #add Millspaugh task update dialog
-        self.taskWidget=TaskUpdate(self)
-        self.verticalLayout_6.addWidget(self.taskWidget)
+        #self.taskWidget=TaskUpdate(self)
+        #self.verticalLayout_6.addWidget(self.taskWidget)
         
         self.gridLayout_3 = QtGui.QGridLayout()
         self.gridLayout_3.setObjectName("gridLayout_3")
