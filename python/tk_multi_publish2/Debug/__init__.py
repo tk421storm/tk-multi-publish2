@@ -51,7 +51,7 @@ from bugStorage import storeBug, storageBase
 debugRoot=join(storageBase,"logs")
 
 #get a program name, fallback to default
-programName='tk-multi-publish2'
+programName='elementsIngest'
 
 #setup debug file using login, machine name et al	
 login=getuser()

@@ -456,7 +456,7 @@ class AppDialog(QtGui.QWidget):
 		'''launch the phosphene bug submit window'''
 		if not extraInfo:
 			extraInfo="user manual bug report"
-		results=launchBugSubmitPanel("tk-multi-publish2", extraInfo, parentPanel=self)
+		results=launchBugSubmitPanel("elementsIngest", extraInfo, parentPanel=self)
 		if results:
 			logFileList=[fullDebugPath]
 			bugName="PHOSPHENE_ERROR_REPORT: "+strftime("%m-%d-%H:%M:%S (")+login+", "+hostname+"): "+programName

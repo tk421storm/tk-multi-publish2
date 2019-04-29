@@ -125,6 +125,9 @@ class SummaryOverlay(QtGui.QWidget):
 		self.ui.publish_again.clicked.connect(self.show_bug_report)
 
 		self.show()
+		
+	def show_bug_report(self):
+		self.bug_submit.emit('Elements Ingest Failed')
 
 	def show_loading(self):
 		"""

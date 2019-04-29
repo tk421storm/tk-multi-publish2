@@ -31,7 +31,7 @@ def touch(fname, times=None):
 def storeBug(subject, message, attachments):
 	'''store a bug report to the disk'''
 	
-	from Debug import debug
+	from . import debug
 	
 	bugID=uuid4().hex
 	bugDirectory=join(storageLocation, bugID)
@@ -76,7 +76,7 @@ def loadBug(bugFolder, removeIfSuccesful=True):
 	'''passed  a bug folder, attempt to load and return the bug dictionary stored there'''
 	
 	
-	from Debug import debug
+	from . import debug
 	
 	try:
 		if not exists(bugFolder):
