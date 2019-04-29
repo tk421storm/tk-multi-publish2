@@ -28,6 +28,9 @@ class SummaryOverlay(QtGui.QWidget):
 
 	# signal emitted when the publish again is clicked by the user
 	publish_again_clicked = QtCore.Signal()
+	
+	# signal emitted when we should show the bug support panel
+	bug_submit=QtCore.Signal(object)
 
 	def __init__(self, parent):
 		"""
@@ -115,8 +118,11 @@ class SummaryOverlay(QtGui.QWidget):
 		
 		self.ui.publish_again.clicked.connect(self.publish_again_clicked.emit)
 
-		self.ui.publish_again.hide()
-		self.ui.publish_again.setText("")
+		#override the publish again text to allow for bug report submission
+		self.ui.publish_again.setText("To submit a bug report, <b><u>click here</u></b>.")
+		self.ui.publish_again.show()
+		self.ui.publish_again.clicked.disconnect(self.publish_again_clicked.emit)
+		self.ui.publish_again.clicked.connect(self.show_bug_report)
 
 		self.show()
 

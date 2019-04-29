@@ -11,6 +11,7 @@
 import traceback
 from pprint import pprint
 from copy import copy
+from time import strftime
 
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
@@ -34,8 +35,13 @@ shotgun_globals = sgtk.platform.import_framework("tk-framework-shotgunutils", "s
 
 logger = sgtk.platform.get_logger(__name__)
 
+
 #phosphene elements
 from .elements import yamlConfigFile, parseYAML
+
+#bring in hacky version of phosphene bug report
+from Debug import launchBugSubmitPanel, fullDebugPath, login, hostname, programName, storeBug
+
 
 
 class AppDialog(QtGui.QWidget):
@@ -140,6 +146,8 @@ class AppDialog(QtGui.QWidget):
 		# overlay
 		self._overlay = SummaryOverlay(self.ui.main_frame)
 		self._overlay.publish_again_clicked.connect(self._publish_again_clicked)
+		self._overlay.bug_submit.connect(self.launchBugSubmitPanel)
+
 
 		# settings
 		self.ui.items_tree.status_clicked.connect(self._on_publish_status_clicked)
@@ -169,13 +177,16 @@ class AppDialog(QtGui.QWidget):
 		self.ui.stop_processing.clicked.connect(self._trigger_stop_processing)
 
 		# help button
-		help_url = self._bundle.get_setting("help_url")
-		if help_url:
+		#help_url = self._bundle.get_setting("help_url")
+		#if help_url:
 			# connect the help button to the help url provided in the settings
-			self.ui.help.clicked.connect(lambda: self._open_url(help_url))
-		else:
+		#	self.ui.help.clicked.connect(lambda: self._open_url(help_url))
+		#else:
 			# no url. hide the button!
-			self.ui.help.hide()
+		#	self.ui.help.hide()
+		#connect help button to bug submit instead of basic documentation
+		self.ui.help.clicked.connect(self.launchBugSubmitPanel)
+
 
 		# browse file action
 		self._browse_file_action = QtGui.QAction(self)
@@ -441,6 +452,22 @@ class AppDialog(QtGui.QWidget):
 		"Tell the system to not show the standard toolkit toolbar"
 		return True
 
+	def launchBugSubmitPanel(self, extraInfo=None):
+		'''launch the phosphene bug submit window'''
+		if not extraInfo:
+			extraInfo="user manual bug report"
+		results=launchBugSubmitPanel("tk-multi-publish2", extraInfo, parentPanel=self)
+		if results:
+			logFileList=[fullDebugPath]
+			bugName="PHOSPHENE_ERROR_REPORT: "+strftime("%m-%d-%H:%M:%S (")+login+", "+hostname+"): "+programName
+	
+			print "sending "+bugName
+			#since we're in a locked environment, we can't always send email
+			#instead we'll store the bug in a network-accesible location
+			#a threaded process can then keep tabs on that folder and perform any action (say, email) on bugs there
+			storeBug(bugName, results+"<br /><br />"+str(extraInfo), logFileList)
+			
+
 	def keyPressEvent(self, event):
 		"""
 		Qt Keypress event
@@ -640,6 +667,7 @@ class AppDialog(QtGui.QWidget):
 			itemName=task.item.name
 			
 			settings=allTaskSettings[itemName]
+
 			for k, v in settings.iteritems():
 				task.settings[k].value = v
 
@@ -996,7 +1024,7 @@ class AppDialog(QtGui.QWidget):
 			self._overlay.show_loading()
 			self.ui.button_container.hide()
 			new_items = self._publish_manager.collect_files(str_files)
-			
+
 			num_items_created = len(new_items)
 			num_errors = self._progress_handler.pop()
 
@@ -1219,6 +1247,7 @@ class AppDialog(QtGui.QWidget):
 		else:
 			return True
 
+
 	def do_validate(self, is_standalone=True):
 		"""
 		Perform a full validation
@@ -1233,6 +1262,7 @@ class AppDialog(QtGui.QWidget):
 		if not deliveryType:
 			return 0
 		
+
 		# Make sure that settings from the current selection are retrieved from the UI and applied
 		# back on the tasks.
 		self._pull_settings_from_ui(self._current_tasks)
@@ -1278,6 +1308,7 @@ class AppDialog(QtGui.QWidget):
 		"""
 		Perform a full publish
 		"""
+
 		#PHOSPHENE - make sure the user has selected a delivery type first!
 		deliveryType=self.deliveryTypeCheck()
 		if not deliveryType:
@@ -1304,6 +1335,7 @@ class AppDialog(QtGui.QWidget):
 					self._progress_handler.logger.error(
 						"Validation errors detected. "
 						"Not proceeding with Ingest."
+
 					)
 					self.ui.button_container.show()
 					return
@@ -1354,6 +1386,7 @@ class AppDialog(QtGui.QWidget):
 				logger.error("Publish error stack:\n%s" % (traceback.format_exc(),))
 				# and log to ui
 				self._progress_handler.logger.error("Error while creating Elements. Aborting.")
+
 				publish_failed = True
 			finally:
 				self._progress_handler.pop()
@@ -1400,6 +1433,7 @@ class AppDialog(QtGui.QWidget):
 		if publish_failed:
 			self._progress_handler.logger.error("Element Ingest Failed! For details, click here.")
 			self._overlay.show_fail()
+
 		else:
 
 			# Publish succeeded
@@ -1409,7 +1443,7 @@ class AppDialog(QtGui.QWidget):
 			except:
 				# ignore all errors. ex: using a core that doesn't support metrics
 				pass
-			
+
 			#get the delivery id for the success overlay
 			deliveryID=None
 			for item in self._publish_manager.tree:
@@ -1418,6 +1452,7 @@ class AppDialog(QtGui.QWidget):
 			self._progress_handler.logger.info("Element Ingest Complete! Click here to show details.")
 			
 			self._overlay.show_success(deliveryID)
+
 
 	def _publish_again_clicked(self):
 		"""
@@ -1766,7 +1801,6 @@ class AppDialog(QtGui.QWidget):
 		self.elementExtensionKeys=copy(configDict)
 		
 		return warnings
-		
 
 
 class _TaskSelection(object):
