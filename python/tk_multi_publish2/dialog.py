@@ -61,6 +61,9 @@ class AppDialog(QtGui.QWidget):
 	#update the list of valid delivery types during init
 	deliveryTypes=QtCore.Signal(object)
 
+	#signal to show the bug submit window
+	showBugSubmit=QtCore.Signal(object)
+
 	def __init__(self, parent=None):
 		"""
 		:param parent: The parent QWidget for this control
@@ -289,6 +292,9 @@ class AppDialog(QtGui.QWidget):
 
 		# run collections
 		self._full_rebuild()
+		
+		#connect bug submit signal to window
+		self.showBugSubmit.connect(self.launchBugSubmitPanel)
 
 
 	def setupElementsIngest(self, parent):
