@@ -15,7 +15,7 @@ from email.mime.text import MIMEText
 from email.utils import formatdate
 
 emailFrom='michael@phosphenefx.com'
-emailTo='tk421storm@gmail.com'
+emailTo='it@phosphenefx.com'
 
 smtpServer='smtp.gmail.com'
 password="Bando.12"
