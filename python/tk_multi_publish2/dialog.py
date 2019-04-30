@@ -47,6 +47,9 @@ class AppDialog(QtGui.QWidget):
 
 	# details ui panes
 	(ITEM_DETAILS, TASK_DETAILS, PLEASE_SELECT_DETAILS, MULTI_EDIT_NOT_SUPPORTED) = range(4)
+	
+	#signal to show the bug submit window
+	showBugSubmit=QtCore.Signal(object)
 
 	def __init__(self, parent=None):
 		"""
@@ -260,6 +263,9 @@ class AppDialog(QtGui.QWidget):
 
 		# run collections
 		self._full_rebuild()
+		
+		#connect bug submit signal to window
+		self.showBugSubmit.connect(self.launchBugSubmitPanel)
 
 	@property
 	def manual_load_enabled(self):
