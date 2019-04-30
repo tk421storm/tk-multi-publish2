@@ -8,6 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+from time import time
 import sgtk
 
 from .api import PublishManager
@@ -35,6 +36,17 @@ def show_dialog(app):
 		pass
     
     logger.info('Phosphene Elements Ingest loaded')
+    
+	#in order to fix the context_widget, we need to snychronize our local cache now
+	#unfortunately this is probably going to be very slow
+	#when they fix the context widget requiring a name (that is not retrieved by the default query)
+	#we should probably remove this to speed things up
+	
+    logger.info('Synchronzing path cache....')
+    start=time()
+    app.sgtk.synchronize_filesystem_structure(full_sync=True)
+    end=time()
+    logger.info('....complete sync took '+str(end-start)+' seconds.')
 
     # start ui
     app.engine.show_dialog(display_name, app, AppDialog)
