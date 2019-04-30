@@ -136,7 +136,7 @@ class BugSubmitPanel(QDialog):
 		self.setLayout(layout)
 		
 		self.setWindowFlags(QtCore.Qt.Tool)
-		self.setWindowTitle('Submit to Render')
+		self.setWindowTitle('Phosphene Bug Submitter')
 
 
 def launchBugSubmitPanel(toolName, extraInfo, debugQueue=None, parentPanel=None):

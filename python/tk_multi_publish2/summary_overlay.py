@@ -116,8 +116,6 @@ class SummaryOverlay(QtGui.QWidget):
 		self.ui.label.setText("Element Ingest\nFailed!")
 		self.ui.info.setText("For more details, <b><u>click here</u></b>.")
 		
-		self.ui.publish_again.clicked.connect(self.publish_again_clicked.emit)
-
 		#override the publish again text to allow for bug report submission
 		self.ui.publish_again.setText("To submit a bug report, <b><u>click here</u></b>.")
 		self.ui.publish_again.show()
