@@ -14,6 +14,7 @@ currentRoot=dirname(realpath(__file__))
 
 phospheneHeader=join(dirname(dirname(dirname(currentRoot))), "resources", "phospheneHeader.png")
 phospheneHeaderBottom=join(dirname(dirname(dirname(currentRoot))), "resources", "phospheneHeader-bottom.png")
+folderIcon=join(dirname(dirname(dirname(currentRoot))), "resources", "folder.png")
 
 
 class Ui_Dialog(object):
@@ -585,6 +586,63 @@ class Ui_Dialog(object):
 		deliveryLayout.addWidget(deliveryDescriptionLabel, 3, 0)
 		deliveryLayout.addWidget(self.deliveryDescription, 3, 1)
 		
+		#attachments (for screenshot)
+		deliveryAttachmentLabel=QtGui.QLabel('Attachment: ')
+		deliveryAttachmentLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
+		
+		tempWidget=QtGui.QWidget()
+		tempLayout=QtGui.QGridLayout()
+		
+		self.deliveryAttachment=QtGui.QLineEdit()
+		self.deliveryAttachment.setMaximumWidth(217)
+		self.deliveryAttachment.setMinimumWidth(217)
+		
+		#enable drag and drop
+		self.deliveryAttachment.setAcceptDrops(True)
+		
+		def dragAndDrop(dropEvent):
+			#print "dropEvent"
+			#print dropEvent.mimeData().text()
+			#dropEvent.acceptProposedAction()
+			url=dropEvent.mimeData().urls()[0].toLocalFile()
+			#print url
+			if exists(url):
+				self.deliveryAttachment.setText(url)
+			
+		def dragEnter(dragEvent):
+			#print "dragEvent"
+			#print "url: "+str(dragEvent.mimeData().urls())
+			if dragEvent.mimeData().hasUrls():
+				dragEvent.acceptProposedAction()
+			
+		self.deliveryAttachment.dragEnterEvent=dragEnter
+		self.deliveryAttachment.dropEvent=dragAndDrop
+		
+		self.deliveryAttachment.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
+		self.deliveryAttachment.setReadOnly(True)
+		self.deliveryAttachmentButton=QtGui.QPushButton()
+		
+		def buttonSize():
+			return QtCore.QSize(25, 25)
+		
+		icon=QtGui.QIcon(folderIcon)
+		self.deliveryAttachmentButton.setIcon(icon)
+		self.deliveryAttachmentButton.setIconSize(QtCore.QSize(15, 15))
+		self.deliveryAttachmentButton.sizeHint=buttonSize
+		self.deliveryAttachmentButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+		
+		tempLayout.addWidget(self.deliveryAttachment, 0, 0)
+		tempLayout.addWidget(self.deliveryAttachmentButton, 0, 1)
+		
+		tempLayout.setColumnStretch(0, 1)
+		tempLayout.setColumnStretch(1, 0)
+		tempLayout.setContentsMargins(0,0,0,0)
+		
+		tempWidget.setLayout(tempLayout)
+		tempWidget.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Maximum)
+		
+		deliveryLayout.addWidget(deliveryAttachmentLabel, 4, 0)
+		deliveryLayout.addWidget(tempWidget, 4, 1)
 		
 		deliveryLayout.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignBottom)
 		self.deliveryWidget.setLayout(deliveryLayout)

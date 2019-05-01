@@ -12,6 +12,7 @@ import traceback
 from pprint import pprint
 from copy import copy
 from time import strftime
+from os.path import exists, dirname, expanduser
 
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
@@ -295,6 +296,9 @@ class AppDialog(QtGui.QWidget):
 		
 		#connect bug submit signal to window
 		self.showBugSubmit.connect(self.launchBugSubmitPanel)
+		
+		#connect attachment button
+		self.ui.deliveryAttachmentButton.clicked.connect(self.launchSelectFolderDialog)
 
 
 	def setupElementsIngest(self, parent):
@@ -472,6 +476,27 @@ class AppDialog(QtGui.QWidget):
 			#instead we'll store the bug in a network-accesible location
 			#a threaded process can then keep tabs on that folder and perform any action (say, email) on bugs there
 			storeBug(bugName, results+"<br /><br />"+str(extraInfo), logFileList)
+			
+	def launchSelectFolderDialog(self):
+		'''display a qdialog allowing user to select a file'''
+		
+		dialog=QtGui.QFileDialog(parent=self)
+		dialog.setAcceptMode(QtGui.QFileDialog.AcceptOpen)
+		#dialog.setFileMode(QtGui.QFileDialog.Directory)
+		
+		if self.ui.deliveryAttachment.text():
+			root=self.ui.deliveryAttachment.text()
+			while not exists(root):
+				root=dirname(root)
+		else:
+			root=expanduser('~')
+		
+		#print "using "+str(root)+" as root for new file directory"
+		dialog.setDirectory(root)
+		
+		if dialog.exec_():
+			self.ui.deliveryAttachment.setText(dialog.selectedFiles()[0])
+			
 			
 
 	def keyPressEvent(self, event):
@@ -1247,6 +1272,7 @@ class AppDialog(QtGui.QWidget):
 			item.properties['deliveryName']=self.ui.deliveryName.text()
 			item.properties['deliveryMethod']=self.ui.deliveryMethod.currentText()
 			item.properties['deliveryDescription']=self.ui.deliveryDescription.toPlainText()
+			item.properties['deliveryAttachment']=self.ui.deliveryAttachment.text()
 			
 		if not deliveryType or not deliveryName:
 			return False
