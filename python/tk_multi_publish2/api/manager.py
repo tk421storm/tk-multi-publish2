@@ -308,7 +308,7 @@ class PublishManager(object):
 
 		# execute the post validate method of the phase phase hook
 		self._post_phase_hook.post_validate(
-			self.tree,
+			self.tree, self
 		)
 
 		return failed_to_validate
@@ -375,7 +375,7 @@ class PublishManager(object):
 
 		# execute the post validate method of the phase phase hook
 		self._post_phase_hook.post_publish(
-			self.tree,
+			self.tree, self
 		)
 
 		return failed_to_publish
@@ -445,7 +445,7 @@ class PublishManager(object):
 
 		# execute the post validate method of the phase phase hook
 		self._post_phase_hook.post_finalize(
-			self.tree,
+			self.tree, self
 		)
 
 		return failed_to_finalize

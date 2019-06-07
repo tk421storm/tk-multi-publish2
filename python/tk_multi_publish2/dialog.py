@@ -1484,6 +1484,26 @@ class AppDialog(QtGui.QWidget):
 					failed_to_finalize = self._publish_manager.finalize(
 						task_generator=self._finalize_task_generator())
 					num_finalize_issues = len(failed_to_finalize)
+					
+					#we need to walk through the tree and update icons based on any statuses set by the plugins
+					if num_finalize_issues+num_issues:
+						list_items = self._get_tree_items()
+
+						for ui_item in list_items:
+							if isinstance(ui_item, TreeNodeTask):
+								print "getting status for "+str(ui_item)+" ("+str(ui_item.__class__)+"): "+str(statusValues[ui_item._task.status()])+" (active: "+str(ui_item._task.active)+")"
+								ui_item.set_status_upwards(ui_item._task.status(), "")
+								#ui_item.set_check_state(ui_item._task.active)
+							elif isinstance(ui_item, TreeNodeItem):
+								ui_item.set_check_state(ui_item.item.active)
+
+						
+				except Exception:
+					# ensure the full error shows up in the log file
+					logger.error("Finalize error stack:\n%s" % (traceback.format_exc(),))
+					# and log to ui
+					self._progress_handler.logger.error("Error while finalizing. Aborting.")
+					#publish_failed = True
 				finally:
 					self._progress_handler.pop()
 					if self._stop_processing_flagged:

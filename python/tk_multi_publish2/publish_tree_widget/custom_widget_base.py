@@ -44,6 +44,8 @@ class CustomTreeWidgetBase(QtGui.QFrame):
         FINALIZE,
         FINALIZE_ERROR,
     ) = range(8)
+    
+    _current_status = 0
 
     def __init__(self, tree_node, parent=None):
         """
@@ -63,8 +65,6 @@ class CustomTreeWidgetBase(QtGui.QFrame):
             self.VALIDATION_STANDALONE: QtGui.QPixmap(":/tk_multi_publish2/status_success.png"),
         }
         self._status_icon = None
-        
-        self._current_status = self.NEUTRAL
 
     @property
     def icon(self):
