@@ -685,6 +685,8 @@ class AppDialog(QtGui.QWidget):
 			self._current_tasks = new_task_selection
 		else:
 			self._current_tasks = _TaskSelection()
+		
+		
 
 	def _pull_settings_from_ui(self, selected_tasks):
 		"""
@@ -701,6 +703,8 @@ class AppDialog(QtGui.QWidget):
 			allTaskSettings = self._current_tasks.get_settings(selected_tasks, widget)
 		else:
 			# TODO: Implement getting the settings from the generic UI, if we ever implement one.
+			#widget = None
+			
 			allTaskSettings = {}
 
 		# Update the values in all the tasks.
@@ -715,6 +719,10 @@ class AppDialog(QtGui.QWidget):
 
 			for k, v in settings.iteritems():
 				task.settings[k].value = v
+		
+		#check for a bug submit signal on this plugin's panel
+		#if hasattr(widget, 'submitBugReportSignal'):
+		#	widget.submitBugReportSignal.connect(self.launchBugSubmitPanel)
 
 	def _push_settings_into_ui(self, selected_tasks):
 		"""
