@@ -32,6 +32,14 @@ class Ui_ProgressDetailsWidget(object):
         self.copy_log_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
         self.copy_log_button.setObjectName("copy_log_button")
         self.horizontalLayout.addWidget(self.copy_log_button)
+        
+        #Millspaugh
+        #add submit bug report button
+        self.submit_bug_report = QtGui.QPushButton()
+        self.submit_bug_report.setMaximumSize(QtCore.QSize(115, 20))
+        self.submit_bug_report.setObjectName("submit_bug_report_button")
+        self.horizontalLayout.addWidget(self.submit_bug_report)
+        
         self.close = QtGui.QToolButton(self.progress_frame)
         self.close.setMinimumSize(QtCore.QSize(30, 30))
         self.close.setMaximumSize(QtCore.QSize(30, 30))
@@ -64,6 +72,7 @@ class Ui_ProgressDetailsWidget(object):
         self.progress_label.setText(QtGui.QApplication.translate("ProgressDetailsWidget", "Progress Details", None, QtGui.QApplication.UnicodeUTF8))
         self.copy_log_button.setToolTip(QtGui.QApplication.translate("ProgressDetailsWidget", "<html><head/><body><p>Open the publisher\'s log file. The log file is useful for deeper debugging of publish issues. For issues involving Shotgun Support, please include a copy of this file when submitting a support request. </p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.copy_log_button.setText(QtGui.QApplication.translate("ProgressDetailsWidget", "Copy to Clipboard", None, QtGui.QApplication.UnicodeUTF8))
+        self.submit_bug_report.setText(QtGui.QApplication.translate("ProgressDetailsWidget", "Submit Bug Report", None, QtGui.QApplication.UnicodeUTF8))
         self.close.setToolTip(QtGui.QApplication.translate("ProgressDetailsWidget", "Close", None, QtGui.QApplication.UnicodeUTF8))
         self.log_tree.setAccessibleName(QtGui.QApplication.translate("ProgressDetailsWidget", "<html><head/><body><p>Opens the log file for the current engine which will include log messages from the publisher. This file is extremely useful for deeper debugging and understanding of publish issues. A copy of this file should be included when submitting support requests to the Shotgun Support team.</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
 

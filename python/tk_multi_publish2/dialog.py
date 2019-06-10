@@ -42,7 +42,21 @@ from .elements import yamlConfigFile, parseYAML
 
 #bring in hacky version of phosphene bug report
 from Debug import launchBugSubmitPanel, fullDebugPath, login, hostname, programName, storeBug
+from Debug.pythonLogging import DebugHandler
 
+logger.addHandler(DebugHandler())
+
+#store text values of statuses for logging
+statusValues= {
+	0:'NEUTRAL',
+	1:'VALIDATION',
+	2:'VALIDATION_STANDALONE',
+	3:'VALIDATION_ERROR',
+	4:'PUBLISH',
+	5:'PUBLISH_ERROR',
+	6:'FINALIZE',
+	7:'FINALIZE_ERROR',
+	}
 
 
 class AppDialog(QtGui.QWidget):
@@ -671,6 +685,8 @@ class AppDialog(QtGui.QWidget):
 			self._current_tasks = new_task_selection
 		else:
 			self._current_tasks = _TaskSelection()
+		
+		
 
 	def _pull_settings_from_ui(self, selected_tasks):
 		"""
@@ -687,6 +703,8 @@ class AppDialog(QtGui.QWidget):
 			allTaskSettings = self._current_tasks.get_settings(selected_tasks, widget)
 		else:
 			# TODO: Implement getting the settings from the generic UI, if we ever implement one.
+			#widget = None
+			
 			allTaskSettings = {}
 
 		# Update the values in all the tasks.
@@ -701,6 +719,10 @@ class AppDialog(QtGui.QWidget):
 
 			for k, v in settings.iteritems():
 				task.settings[k].value = v
+		
+		#check for a bug submit signal on this plugin's panel
+		#if hasattr(widget, 'submitBugReportSignal'):
+		#	widget.submitBugReportSignal.connect(self.launchBugSubmitPanel)
 
 	def _push_settings_into_ui(self, selected_tasks):
 		"""
@@ -1408,39 +1430,115 @@ class AppDialog(QtGui.QWidget):
 			# clear all icons
 			parent = self.ui.items_tree.invisibleRootItem()
 			self._reset_tree_icon_r(parent)
-
+			
+			#
+			# instead of failing when one object fails, attempt to continue through other objects
+			# this should allow large groups of objects to be processed without a single failing botching the whole job
+			#
+			is_standalone = True
+			num_issues = 0
+			self.ui.stop_processing.show()
 			try:
-				self._publish_manager.publish(
-					task_generator=self._publish_task_generator()
-				)
+				failed_to_publish = self._publish_manager.publish(
+					task_generator=self._publish_task_generator())
+				num_issues = len(failed_to_publish)
 			except Exception:
 				# ensure the full error shows up in the log file
 				logger.error("Publish error stack:\n%s" % (traceback.format_exc(),))
 				# and log to ui
 				self._progress_handler.logger.error("Error while creating Elements. Aborting.")
-
-				publish_failed = True
 			finally:
 				self._progress_handler.pop()
+				if self._stop_processing_flagged:
+					self._progress_handler.logger.info("Processing aborted by user.")
+				elif num_issues > 0:
+					self._progress_handler.logger.error("Publishing Complete - %d errors reported." % num_issues)
+				else:
+					self._progress_handler.logger.info("Publishing Complete. All items published succesfully.")
+	
+				if is_standalone:
+					# reset process aborted flag
+					self._stop_processing_flagged = False
+					self.ui.stop_processing.hide()
+					# reset the progress
+					self._progress_handler.reset_progress()
 
-			if not publish_failed and not self._stop_processing_flagged:
+			#try:
+			#	self._publish_manager.publish(
+			#		task_generator=self._publish_task_generator()
+			#	)
+			#except Exception:
+			#	# ensure the full error shows up in the log file
+			#	logger.error("Publish error stack:\n%s" % (traceback.format_exc(),))
+			#	# and log to ui
+			#	self._progress_handler.logger.error("Error while creating Elements. Aborting.")
+
+			#	publish_failed = True
+			#finally:
+			#	self._progress_handler.pop()
+
+			#if not publish_failed and not self._stop_processing_flagged:
+			if not self._stop_processing_flagged:
 				# proceed with finalizing phase
 
 				# inform the progress system of the current mode
 				self._progress_handler.set_phase(self._progress_handler.PHASE_FINALIZE)
 				self._progress_handler.push("Running finalizing pass")
 
+
+				num_finalize_issues = 0
+				self.ui.stop_processing.show()
 				try:
-					self._publish_manager.finalize(
+					failed_to_finalize = self._publish_manager.finalize(
 						task_generator=self._finalize_task_generator())
+					num_finalize_issues = len(failed_to_finalize)
+					
+					#we need to walk through the tree and update icons based on any statuses set by the plugins
+					if num_finalize_issues+num_issues:
+						list_items = self._get_tree_items()
+
+						for ui_item in list_items:
+							if isinstance(ui_item, TreeNodeTask):
+								print "getting status for "+str(ui_item)+" ("+str(ui_item.__class__)+"): "+str(statusValues[ui_item._task.status()])+" (active: "+str(ui_item._task.active)+")"
+								ui_item.set_status_upwards(ui_item._task.status(), "")
+								#ui_item.set_check_state(ui_item._task.active)
+							elif isinstance(ui_item, TreeNodeItem):
+								ui_item.set_check_state(ui_item.item.active)
+
+						
 				except Exception:
 					# ensure the full error shows up in the log file
 					logger.error("Finalize error stack:\n%s" % (traceback.format_exc(),))
 					# and log to ui
 					self._progress_handler.logger.error("Error while finalizing. Aborting.")
-					publish_failed = True
+					#publish_failed = True
 				finally:
 					self._progress_handler.pop()
+					if self._stop_processing_flagged:
+						self._progress_handler.logger.info("Processing aborted by user.")
+					elif num_finalize_issues > 0:
+						self._progress_handler.logger.error("Finalizing Complete - %d errors reported." % num_finalize_issues)
+					else:
+						self._progress_handler.logger.info("Finalizing Complete. All eligible items finalized succesfully.")
+		
+					if is_standalone:
+						# reset process aborted flag
+						self._stop_processing_flagged = False
+						self.ui.stop_processing.hide()
+						# reset the progress
+						self._progress_handler.reset_progress()
+					
+				#try:
+				#	self._publish_manager.finalize(
+				#		task_generator=self._finalize_task_generator())
+				#except Exception:
+				#	# ensure the full error shows up in the log file
+				#	logger.error("Finalize error stack:\n%s" % (traceback.format_exc(),))
+				#	# and log to ui
+				#	self._progress_handler.logger.error("Error while finalizing. Aborting.")
+				#	publish_failed = True
+				#finally:
+				#	self._progress_handler.pop()
 
 			# if stop processing was flagged, don't show summary at end
 			if self._stop_processing_flagged:
@@ -1456,17 +1554,18 @@ class AppDialog(QtGui.QWidget):
 			# reset the progress
 			self._progress_handler.reset_progress()
 
-		# disable validate and publish buttons
-		# show close button instead
-		self.ui.validate.hide()
-		self.ui.publish.hide()
-		self.ui.close.show()
-
-		if publish_failed:
+		#look for any publish/finalize issues (not just a boole anymore)
+		if num_issues>0 or num_finalize_issues>0:
 			self._progress_handler.logger.error("Element Ingest Failed! For details, click here.")
-			self._overlay.show_fail()
+			#self._overlay.show_fail()
 
 		else:
+			
+			# disable validate and publish buttons
+			# show close button instead
+			self.ui.validate.hide()
+			self.ui.publish.hide()
+			self.ui.close.show()
 
 			# Publish succeeded
 			# Log the toolkit "Published" metric
@@ -1605,25 +1704,71 @@ class AppDialog(QtGui.QWidget):
 		processing the tasks in the proper order and updating the task's UI
 		representation in the dialog.
 		"""
-
+		#rebuild generator to allow for individual tasks/item to fail without killing the whole process
 		for ui_item in self._task_generator("Publishing"):
+			#if another plugin/task failed, the status of this item will be STATUS_PUBLISH_ERROR, and we should skip it
+			namedStatuses=ui_item.get_status_upwards()
+			statuses=[tupler[1] for tupler in namedStatuses]
+			#logger.debug(str(ui_item)+" and its parents have the following statuses: ")
+			#logger.debug("   "+str([name+" : "+str(statusValues[value]) for name, value in namedStatuses]))
+			#logger.debug("   "+str(statuses))
+			if ui_item.STATUS_PUBLISH_ERROR in statuses:
+				#get the parent item for clarity
+				try:
+					parentItem=ui_item.get_publish_instance().item
+				except:
+					parentItem=ui_item.get_publish_instance()
+					
+				logger.warning('Skipping publish task '+str(ui_item)+' ('+str(parentItem)+') since another plugin/task didn\'t succesfully publish')
+				continue
+			
 			try:
 				# yield each child item to be acted on by the publish api
 				if isinstance(ui_item, TreeNodeTask):
-					yield ui_item.task
+					(is_successful, error) = yield ui_item.task
+					error_msg = str(error)
 
 				# all other nodes are UI-only and can handle their own
-				# publishing
+				# validation
 				else:
-					ui_item.publish()
+					is_successful = ui_item.publish()
+					error_msg = "Unknown publish error!"
 			except Exception, e:
+				self.logger.warning('Exception occured publishing '+str(ui_item)+str(e))
 				ui_item.set_status_upwards(
 					ui_item.STATUS_PUBLISH_ERROR,
 					str(e)
 				)
 				raise
 			else:
-				ui_item.set_status(ui_item.STATUS_PUBLISH)
+				if is_successful:
+					logger.debug('Publishing '+str(ui_item)+' returned '+str(is_successful)+"!")
+					ui_item.set_status(ui_item.STATUS_PUBLISH)
+				else:
+					logger.debug('Publishing '+str(ui_item)+' returned '+str(is_successful)+", "+str(error_msg))
+					ui_item.set_status_upwards(
+						ui_item.STATUS_PUBLISH_ERROR,
+						error_msg
+					)
+
+		#for ui_item in self._task_generator("Publishing"):
+		#	try:
+		#		# yield each child item to be acted on by the publish api
+		#		if isinstance(ui_item, TreeNodeTask):
+		#			yield ui_item.task
+		#
+		#		# all other nodes are UI-only and can handle their own
+		#		# publishing
+		#		else:
+		#			ui_item.publish()
+		#	except Exception, e:
+		#		ui_item.set_status_upwards(
+		#			ui_item.STATUS_PUBLISH_ERROR,
+		#			str(e)
+		#		)
+		#		raise
+		#	else:
+		#		ui_item.set_status(ui_item.STATUS_PUBLISH)
 
 	def _finalize_task_generator(self):
 		"""
@@ -1631,17 +1776,29 @@ class AppDialog(QtGui.QWidget):
 		processing the tasks in the proper order and updating the task's UI
 		representation in the dialog.
 		"""
+		
+		#rebuild generator to allow for individual tasks/item to fail without killing the whole process
 		for ui_item in self._task_generator("Finalizing"):
+			#we need to make sure the item succesfully published, if not, we shouldn't finalize
+			namedStatuses=ui_item.get_status_upwards()
+			statuses=[tupler[1] for tupler in namedStatuses]
+			#logger.debug(str(ui_item)+" and its parents have the following statuses: ")
+			#logger.debug("   "+str([name+" : "+str(statusValues[value]) for name, value in namedStatuses]))
+			if ui_item.STATUS_PUBLISH_ERROR in statuses:
+				logger.warning('Skipping finalize task '+str(ui_item)+' since some tasks didn\'t succesfully publish')
+				continue
+			
 			try:
 				# yield each child item to be acted on by the publish api
 				if isinstance(ui_item, TreeNodeTask):
-					finalize_exception = yield ui_item.task
+					(is_successful, error) = yield ui_item.task
+					error_msg = str(error)
 
 				# all other nodes are UI-only and can handle their own
-				# finalize
+				# validation
 				else:
-					ui_item.finalize()
-					finalize_exception = None
+					is_successful = ui_item.finalize()
+					error_msg = "Unknown finalize error!"
 			except Exception, e:
 				ui_item.set_status_upwards(
 					ui_item.STATUS_FINALIZE_ERROR,
@@ -1649,13 +1806,39 @@ class AppDialog(QtGui.QWidget):
 				)
 				raise
 			else:
-				if finalize_exception:
+				if is_successful:
+					ui_item.set_status(ui_item.STATUS_FINALIZE)
+				else:
 					ui_item.set_status_upwards(
 						ui_item.STATUS_FINALIZE_ERROR,
-						str(finalize_exception)
+						error_msg
 					)
-				else:
-					ui_item.set_status(ui_item.STATUS_FINALIZE)
+					
+		#for ui_item in self._task_generator("Finalizing"):
+		#	try:
+		#		# yield each child item to be acted on by the publish api
+		#		if isinstance(ui_item, TreeNodeTask):
+		#			finalize_exception = yield ui_item.task
+		#
+		#		# all other nodes are UI-only and can handle their own
+		#		# finalize
+		#		else:
+		#			ui_item.finalize()
+		#			finalize_exception = None
+		#	except Exception, e:
+		#		ui_item.set_status_upwards(
+		#			ui_item.STATUS_FINALIZE_ERROR,
+		#			str(e)
+		#		)
+		#		raise
+		#	else:
+		#		if finalize_exception:
+		#			ui_item.set_status_upwards(
+		#				ui_item.STATUS_FINALIZE_ERROR,
+		#				str(finalize_exception)
+		#			)
+		#		else:
+		#			ui_item.set_status(ui_item.STATUS_FINALIZE)
 
 	def _on_item_context_change(self, context):
 		"""

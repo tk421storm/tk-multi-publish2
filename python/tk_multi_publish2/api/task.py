@@ -35,7 +35,8 @@ class PublishTask(object):
         "_settings",
         "_active",
         "_visible",
-        "_enabled"
+        "_enabled",
+        "_status"
     ]
 
     @classmethod
@@ -63,6 +64,7 @@ class PublishTask(object):
         new_task._active = task_dict["active"]
         new_task._visible = task_dict["visible"]
         new_task._enabled = task_dict["enabled"]
+        new_task._status = task_dict['status']
 
         # create all the setting instances from the data
         for (k, setting) in task_dict["settings"].iteritems():
@@ -95,6 +97,7 @@ class PublishTask(object):
         self._active = checked
         self._visible = visible
         self._enabled = enabled
+        self._status = 0
 
         logger.debug("Created publish tree task: %s" % (self,))
 
@@ -120,6 +123,7 @@ class PublishTask(object):
             "active": self._active,
             "visible": self._visible,
             "enabled": self._enabled,
+            "status": self._status
         }
 
     def __repr__(self):
@@ -139,18 +143,24 @@ class PublishTask(object):
         :type other_task: :class:`PublishTask`
         """
         return self._plugin == other_task._plugin
+       
+    def rollback(self):
+        """
+        run the rollback function of this task (if any)
+        """
+        return self.plugin.run_rollback(self.settings, self.item)
 
     def publish(self):
         """
         Publish this Task
         """
-        self.plugin.run_publish(self.settings, self.item)
+        return self.plugin.run_publish(self.settings, self.item)
 
     def finalize(self):
         """
         Finalize this Task
         """
-        self.plugin.run_finalize(self.settings, self.item)
+        return self.plugin.run_finalize(self.settings, self.item)
 
     def validate(self):
         """
@@ -275,6 +285,14 @@ class PublishTask(object):
     def name(self):
         """The display name of the task."""
         return self._name or self.plugin.name
+       
+    def status(self):
+		"""The display status of the task."""
+		return self._status
+	
+    def setStatus(self, status):
+		'''sets the status of the task (from the ui/manager)'''
+		self._status = status
 
     @name.setter
     def name(self, new_name):
