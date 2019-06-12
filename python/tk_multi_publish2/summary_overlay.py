@@ -88,7 +88,7 @@ class SummaryOverlay(QtGui.QWidget):
 		self.ui.info.clicked.connect(self.show_delivery)
 
 		self.ui.publish_again.setText("To ingest more Elements, <b><u>click here</u></b>.")
-		self.ui.publish_again.show()
+		#self.ui.publish_again.show()
 
 		self.show()
 		
