@@ -171,7 +171,7 @@ class AppDialog(QtGui.QWidget):
 		self.ui.items_tree.status_clicked.connect(self._on_publish_status_clicked)
 
 		# when the description is updated
-		self.ui.item_comments.textChanged.connect(self._on_item_comment_change)
+		#self.ui.item_comments.textChanged.connect(self._on_item_comment_change)
 
 		# selection in tree view
 		self.ui.items_tree.itemSelectionChanged.connect(self._update_details_from_selection)
@@ -848,8 +848,8 @@ class AppDialog(QtGui.QWidget):
 			self.ui.item_thumbnail_label.hide()
 			self.ui.item_thumbnail.hide()
 
-		self.ui.item_description_label.setText("Description")
-		self.ui.item_comments.setPlainText(item.description)
+		#self.ui.item_description_label.setText("Description")
+		#self.ui.item_comments.setPlainText(item.description)
 
 		# if summary thumbnail is defined, item thumbnail should inherit it
 		# unless item thumbnail was set after summary thumbnail
@@ -944,14 +944,14 @@ class AppDialog(QtGui.QWidget):
 		# setting enabled to true to be able to take a snapshot to define the thumbnail 
 		self.ui.item_thumbnail.setEnabled(True)
 
-		self.ui.item_description_label.setText("Description for all items")
-		self.ui.item_comments.setPlainText(self._summary_comment)
+		#self.ui.item_description_label.setText("Description for all items")
+		#self.ui.item_comments.setPlainText(self._summary_comment)
 
 		# the item_comments PublishDescriptionFocus won't display placeholder text if it is in focus
 		# so clearing the focus from that widget in order to see the <multiple values> warning once 
 		# the master summary details page is opened
-		self.ui.item_comments.clearFocus()
-		self.ui.item_comments._show_placeholder = self._summary_comment_multiple_values
+		#self.ui.item_comments.clearFocus()
+		#self.ui.item_comments._show_placeholder = self._summary_comment_multiple_values
 
 		# for the summary, attempt to display the appropriate context in the
 		# context widget. if all publish items have the same context, display
