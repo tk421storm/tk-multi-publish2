@@ -124,10 +124,12 @@ class AppDialog(QtGui.QWidget):
         self.ui.drag_progress_message.hide()
 
         # buttons
-        self.ui.validate.clicked.connect(self.do_validate)
         self.ui.publish.clicked.connect(self.do_publish)
         self.ui.close.clicked.connect(self.close)
         self.ui.close.hide()
+        # do_validate is invoked using a lambda function because it receives custom parameters
+        # https://eli.thegreenplace.net/2011/04/25/passing-extra-arguments-to-pyqt-slot/
+        self.ui.validate.clicked.connect(lambda: self.do_validate())
 
         # overlay
         self._overlay = SummaryOverlay(self.ui.main_frame)
@@ -373,6 +375,9 @@ class AppDialog(QtGui.QWidget):
                 self._update_task_details_ui()
                 # top node summary
                 self._create_master_summary_details()
+
+        # Make the task validation if the setting `task_required` exists and it's True
+        self._validate_task_required()
 
     def _is_task_selection_homogeneous(self, items):
         """
@@ -1421,6 +1426,9 @@ class AppDialog(QtGui.QWidget):
         if sync_required:
             self._synchronize_tree()
 
+        # Make the task validation if the setting `task_required` exists and it's True
+        self._validate_task_required()
+
     def _on_browse(self, folders=False):
         """Opens a file dialog to browse to files for publishing."""
 
@@ -1499,6 +1507,38 @@ class AppDialog(QtGui.QWidget):
 
         self.ui.main_stack.setCurrentIndex(self.PUBLISH_SCREEN)
         self._overlay.show_no_items_error()
+
+    def _validate_task_required(self):
+        """
+        Validates that a task is selected for every item and disables/enables the
+        validate and publish buttons and finally change the color for the task
+        label.
+        """
+        # Avoid validation if the setting `task_required` is False or not exists
+        if not self._bundle.get_setting("task_required"):
+            return
+
+        all_items_selected_task = True
+        for context_index in xrange(self.ui.items_tree.topLevelItemCount()):
+            context_item = self.ui.items_tree.topLevelItem(context_index)
+
+            if hasattr(context_item, "context") and not context_item.context.task:
+                all_items_selected_task = False
+                break
+
+        if not all_items_selected_task:
+            # disable buttons
+            self.ui.publish.setEnabled(False)
+            self.ui.validate.setEnabled(False)
+            # change task label color to RED
+            self.ui.context_widget.ui.task_label.setStyleSheet("color: red")
+        else:
+            # enable buttons
+            self.ui.publish.setEnabled(True)
+            self.ui.validate.setEnabled(True)
+
+            # change task label color to the default value
+            self.ui.context_widget.ui.task_label.setStyleSheet("")
 
 
 class _TaskSelection(object):
