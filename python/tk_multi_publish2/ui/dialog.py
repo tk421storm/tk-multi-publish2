@@ -233,11 +233,6 @@ class Ui_Dialog(object):
         self.context_widget = ContextWidget(self.details_item)
         self.context_widget.setObjectName("context_widget")
         self.verticalLayout_6.addWidget(self.context_widget)
-                
-        #add Millspaugh task update dialog
-        #self.taskWidget=TaskUpdate(self)
-        #self.verticalLayout_6.addWidget(self.taskWidget)
-        
         self.gridLayout_3 = QtGui.QGridLayout()
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.item_description_label = QtGui.QLabel(self.details_item)
@@ -565,5 +560,5 @@ from ..custom_settings_widget import CustomSettingsWidget
 from ..publish_tree_widget import PublishTreeWidget
 from ..settings_widget import SettingsWidget
 from ..drop_area import DropAreaFrame
-from ..qtwidgets import ElidedLabel, ContextWidget, TaskUpdate
+from ..qtwidgets import ElidedLabel, ContextWidget
 from . import resources_rc
