@@ -11,8 +11,8 @@
 import traceback
 from time import strftime
 
-import sgtk
-from sgtk.platform.qt import QtCore, QtGui
+import sgtk #@UnresolvedImport
+from sgtk.platform.qt import QtCore, QtGui #@UnresolvedImport
 
 from .api import PublishManager, PublishItem, PublishTask
 from .ui.dialog import Ui_Dialog
@@ -276,6 +276,8 @@ class AppDialog(QtGui.QWidget):
 
     def launchBugSubmitPanel(self, extraInfo=None):
         '''launch the phosphene bug submit window'''
+        pass
+        """
         if not extraInfo:
             extraInfo="user manual bug report"
         results=launchBugSubmitPanel("tk-multi-publish2", extraInfo, parentPanel=self)
@@ -288,6 +290,8 @@ class AppDialog(QtGui.QWidget):
             #instead we'll store the bug in a network-accesible location
             #a threaded process can then keep tabs on that folder and perform any action (say, email) on bugs there
             storeBug(bugName, results+"<br /><br />"+str(extraInfo), logFileList)
+            
+        """
             
 
     def keyPressEvent(self, event):
