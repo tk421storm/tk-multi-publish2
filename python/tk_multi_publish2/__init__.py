@@ -26,8 +26,8 @@ def show_dialog(app):
 
     display_name = sgtk.platform.current_bundle().get_setting("display_name")
     
-    print "logger item: "
-    print sgtk.custom_debug_handler
+    #print "logger item: "
+    #print sgtk.custom_debug_handler
     
     #store publish logs alongside other phosphene logs, enable bug submit
     logger = sgtk.platform.get_logger(__name__)
