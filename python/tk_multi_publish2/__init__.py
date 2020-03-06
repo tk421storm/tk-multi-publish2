@@ -9,6 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import sgtk
+from traceback import format_exc
 
 from .api import PublishManager
 from . import base_hooks
@@ -25,19 +26,25 @@ def show_dialog(app):
 
     display_name = sgtk.platform.current_bundle().get_setting("display_name")
     
+    #print "logger item: "
+    #print sgtk.custom_debug_handler
+    
     #store publish logs alongside other phosphene logs, enable bug submit
     logger = sgtk.platform.get_logger(__name__)
-    try:
-	    phospheneDebugHandler=sgtk.custom_debug_handler
-	    print "hooking phosphene logs into "+str(logger)
-	    logger.addHandler(phospheneDebugHandler)
-    except:
-		pass
+    #try:
+    #    #from .Debug import DebugHandler
+    #    #phospheneDebugHandler=DebugHandler()
+    #    phospheneDebugHandler=sgtk.custom_debug_handler
+    #    print "hooking phosphene logs into "+str(logger)
+    #    logger.addHandler(phospheneDebugHandler)
+    #except:
+    #    print format_exc()
     
     logger.info('Phosphene publish loaded')
 
     # start ui
     app.engine.show_dialog(display_name, app, AppDialog)
+
 
 
 
