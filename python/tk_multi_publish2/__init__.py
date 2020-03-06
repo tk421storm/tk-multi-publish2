@@ -44,8 +44,7 @@ def show_dialog(app):
 
     # start ui
     app.engine.show_dialog(display_name, app, AppDialog)
-    
-    print "dialog closed"
+
 
 
 
