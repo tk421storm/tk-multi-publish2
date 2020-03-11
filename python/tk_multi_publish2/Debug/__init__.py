@@ -4,7 +4,7 @@ threaded debug log
 
 '''
 
-import threading
+from threading import Event
 from os.path import join, dirname, isdir, exists, getsize, realpath
 from os import makedirs, environ
 from multiprocessing import Queue
@@ -71,7 +71,7 @@ maxSize=3000000
 ###
 ############
 
-class DebugWriter(threading.Thread):
+class DebugWriter(QtCore.QThread):
 	'''
 	a background process that is killable
 	'''
@@ -80,7 +80,7 @@ class DebugWriter(threading.Thread):
 		'''constructor, setting initial variables '''
 		self.debugQueue=debugQueue
 		self.bugQueue=bugSubmitQueue
-		self._stopevent = threading.Event()
+		self._stopevent = Event()
 		self._sleepperiod = .1
 		self.recycle=0
 		print programName+" debugWriter starting"
@@ -125,7 +125,7 @@ class DebugWriter(threading.Thread):
 			
 		print " debugWriter outputing to "+self.debugFile
 
-		threading.Thread.__init__(self, name=name)
+		QtCore.QThread.__init__(self)#, name=name)
 		
 		#a dictionary of all current metrics
 		self.metrics={}
@@ -287,7 +287,7 @@ class DebugWriter(threading.Thread):
 		store bugs for another process to monitor, email, report etc
 		'''
 		
-		self.debugQueue.put_nowait((1, "debug thread function bug submit called from "+str(threading.current_thread())+", toolName: "+toolName+", extraInfo: "+str(extraInfo)+", logFile:"+str(logFile)))
+		self.debugQueue.put_nowait((1, "debug thread function bug submit called from "+str(QtCore.QThread.current_thread())+", toolName: "+toolName+", extraInfo: "+str(extraInfo)+", logFile:"+str(logFile)))
 
 		userReport=launchBugSubmitPanel(toolName, extraInfo, debugQueue)
 		
@@ -403,7 +403,10 @@ def debug(level,msg, label=None):
 	try:
 		debugQueue.put_nowait((level, str(msg), label, timestamp, currentTime))
 	except UnicodeEncodeError:
-		debugQueue.put_nowait((level, msg.encode('ascii', 'ignore'), label, timestamp, currentTime))
+		try:
+			debugQueue.put_nowait((level, msg.encode('ascii', 'ignore'), label, timestamp, currentTime))
+		except:
+			pass
 			
 	##return the result for further logging if necessary
 	return msg
