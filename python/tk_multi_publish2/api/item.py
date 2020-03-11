@@ -889,9 +889,13 @@ class PublishItem(object):
     def status(self):
         """The display status of the task."""
         return self._status
-	
+
     def setStatus(self, status):
-        '''sets the status of the task (from the ui/manager)'''
+        '''sets the status of the task (from the ui/manager)
+        
+           there are confusing singals & slots that prevent the ui from sucessfully
+           setting the status of an item. this function can safely be called from
+           the ui for that purpose'''
         self._status = status
 
     @property
