@@ -11,6 +11,9 @@
 from contextlib import contextmanager
 import traceback
 
+#python 2 only
+from inspect import getargspec
+
 import sgtk
 from .instance_base import PluginInstanceBase
 
@@ -266,7 +269,7 @@ class PublishPluginInstance(PluginInstanceBase):
         with self._handle_plugin_error(None, "Error laying out widgets: %s"):
             return self._hook_instance.create_settings_widget(parent)
 
-    def run_get_ui_settings(self, selected_tasks, parent):
+    def run_get_ui_settings(self, parent, selected_tasks=None):
         """
         Retrieves the settings from the custom UI.
 
@@ -274,6 +277,9 @@ class PublishPluginInstance(PluginInstanceBase):
 
         :param parent: Parent widget
         :type parent: :class:`QtGui.QWidget`
+        
+        :param selected_tasks: a list of tasks selected in the gui
+        :type selected_tasks: List of PublishTask instances
         """
 
         # nothing to do if running without a UI
@@ -281,9 +287,16 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error reading settings from UI: %s"):
-            return self._hook_instance.get_ui_settings(selected_tasks, parent)
+            #we'll need to determine how the plugin was coded - if it can accept the selected_tasks variable, pass it
+            #note that we'll have to replace this with Signature as of python 3
+            function=self._hook_instance.get_ui_settings
+            args=len(getargspec(function)[0])
+            if args==2:
+                return function(parent, selected_tasks)
+            else:
+                return function(parent)
 
-    def run_set_ui_settings(self, parent, settings, selected_tasks):
+    def run_set_ui_settings(self, parent, settings, selected_tasks=None):
         """
         Provides a list of settings from the custom UI. It is the responsibility of the UI
         handle different values for the same setting.
@@ -300,7 +313,14 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error writing settings to UI: %s"):
-            self._hook_instance.set_ui_settings(parent, settings, selected_tasks)
+            #we'll need to determine how the plugin was coded - if it can accept the selected_tasks variable, pass it
+            #note that we'll have to replace this with Signature as of python 3
+            function=self._hook_instance.set_ui_settings
+            args=len(getargspec(function)[0])
+            if args==2:
+                return function(parent, settings, selected_tasks)
+            else:
+                return function(parent, settings)
 
     @contextmanager
     def _handle_plugin_error(self, success_msg, error_msg):
