@@ -479,15 +479,26 @@ class AppDialog(QtGui.QWidget):
         """
         if selected_tasks.has_custom_ui:
             widget = self.ui.task_settings.widget
-            settings = self._current_tasks.get_settings(widget)
+            
+            #instead of returning just one settings dict, get_settings will return a dict of task.name : settings dict
+            #so we can set each tasks' settings differently
+            allTaskSettings = self._current_tasks.get_settings(selected_tasks, widget)
         else:
             # TODO: Implement getting the settings from the generic UI, if we ever implement one.
-            settings = {}
+            #widget = None
+            
+            allTaskSettings = {}
 
         # Update the values in all the tasks.
         for task in selected_tasks:
             # The settings returned by the UI are actual value, not Settings objects, so apply each
             # value returned on the appropriate settings object.
+            
+            #get the corresponding item name for the task
+            itemName=task.item.name
+            
+            settings=allTaskSettings[itemName]
+
             for k, v in settings.iteritems():
                 task.settings[k].value = v
 
@@ -509,7 +520,8 @@ class AppDialog(QtGui.QWidget):
 
         if selected_tasks.has_custom_ui:
             try:
-                selected_tasks.set_settings(self.ui.task_settings.widget, tasks_settings)
+                #also pass tasks, for more complex per-item settings
+                selected_tasks.set_settings(self.ui.task_settings.widget, tasks_settings, selected_tasks)
             except NotImplementedError:
                 self.ui.details_stack.setCurrentIndex(self.MULTI_EDIT_NOT_SUPPORTED)
                 return False
@@ -1600,7 +1612,7 @@ class _TaskSelection(object):
         else:
             return None
 
-    def get_settings(self, widget):
+    def get_settings(self, widget, selected_tasks):
         """
         Retrieves the settings from the selection's custom UI.
 
@@ -1609,11 +1621,11 @@ class _TaskSelection(object):
         :returns: Dictionary of settings as regular Python literals.
         """
         if self._items:
-            return self._items[0].plugin.run_get_ui_settings(widget)
+            return self._items[0].plugin.run_get_ui_settings(widget, selected_tasks)
         else:
             return {}
 
-    def set_settings(self, widget, settings):
+    def set_settings(self, widget, settings, selected_tasks):
         """
         Sets the settings from the selection into the custom UI.
 
@@ -1621,7 +1633,7 @@ class _TaskSelection(object):
         :param settings: List of settings for all tasks.
         """
         if self._items:
-            self._items[0].plugin.run_set_ui_settings(widget, settings)
+            self._items[0].plugin.run_set_ui_settings(widget, settings, selected_tasks)
 
     def __iter__(self):
         """

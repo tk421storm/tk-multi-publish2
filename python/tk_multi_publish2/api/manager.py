@@ -308,7 +308,7 @@ class PublishManager(object):
 
         # execute the post validate method of the phase phase hook
         self._post_phase_hook.post_validate(
-            self.tree,
+            self.tree, self
         )
 
         return failed_to_validate
@@ -345,10 +345,45 @@ class PublishManager(object):
 
         :param task_generator: A generator of :class:`~PublishTask` instances.
         """
-        self._process_tasks(task_generator, lambda task: task.publish())
+        
+        # enable return values from publish status (to allow multiple fails before the process fails)
+        # we'll use this to build a list of tasks that failed to validate
+        failed_to_publish = []
+
+        def task_cb(task):
+            error = None
+            # do the actual validation and send the status back to the generator
+            # so that it can react to the results. This is used, for example, by
+            # the UI's generator to update the display of the task as it is
+            # being processed.
+            try:
+                published = task.publish()
+            except Exception, e:
+                published = False
+                error = e
+
+            # if the task didn't validate, add it to the list of tasks that
+            # failed.
+            if not published:
+                failed_to_publish.append((task, error))
+                
+            #self.logger.debug('manager: task '+str(task)+' returning '+str((published, error)))
+
+            return (published, error)
+
+        self._process_tasks(task_generator, task_cb)
+
+        # execute the post validate method of the phase phase hook
+        self._post_phase_hook.post_publish(
+            self.tree, self
+        )
+
+        return failed_to_publish
+        
+        #self._process_tasks(task_generator, lambda task: task.publish())
 
         # execute the post publish method of the phase phase hook
-        self._post_phase_hook.post_publish(self.tree)
+        #self._post_phase_hook.post_publish(self.tree)
 
     def finalize(self, task_generator=None):
         """
@@ -382,10 +417,43 @@ class PublishManager(object):
 
         :param task_generator: A generator of :class:`~PublishTask` instances.
         """
-        self._process_tasks(task_generator, lambda task: task.finalize())
+        
+        # enable return values from publish status (to allow multiple fails before the process fails)
+        # we'll use this to build a list of tasks that failed to validate
+        failed_to_finalize = []
+
+        def task_cb(task):
+            error = None
+            # do the actual validation and send the status back to the generator
+            # so that it can react to the results. This is used, for example, by
+            # the UI's generator to update the display of the task as it is
+            # being processed.
+            try:
+                finalized = task.finalize()
+            except Exception, e:
+                finalized = False
+                error = e
+
+            # if the task didn't validate, add it to the list of tasks that
+            # failed.
+            if not finalized:
+                failed_to_finalize.append((task, error))
+
+            return (finalized, error)
+
+        self._process_tasks(task_generator, task_cb)
+
+        # execute the post validate method of the phase phase hook
+        self._post_phase_hook.post_finalize(
+            self.tree, self
+        )
+
+        return failed_to_finalize
+        
+        #self._process_tasks(task_generator, lambda task: task.finalize())
 
         # execute the post finalize method of the phase phase hook
-        self._post_phase_hook.post_finalize(self.tree)
+        #self._post_phase_hook.post_finalize(self.tree)
 
     @property
     def context(self):

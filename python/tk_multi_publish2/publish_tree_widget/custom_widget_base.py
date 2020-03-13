@@ -44,6 +44,8 @@ class CustomTreeWidgetBase(QtGui.QFrame):
         FINALIZE,
         FINALIZE_ERROR,
     ) = range(8)
+    
+    _current_status = 0
 
     def __init__(self, tree_node, parent=None):
         """
@@ -108,6 +110,9 @@ class CustomTreeWidgetBase(QtGui.QFrame):
 
         if status not in self._icon_lookup:
             raise ValueError("Invalid icon index!")
+           
+        #store the value for lookup
+        self._current_status=status
 
         if status == self.NEUTRAL:
             self.ui.status.hide()
@@ -138,3 +143,6 @@ class CustomTreeWidgetBase(QtGui.QFrame):
                 QtGui.QIcon.Off
             )
             self.ui.status.setIcon(self._status_icon)
+            
+    def get_status(self):
+        return self._current_status
