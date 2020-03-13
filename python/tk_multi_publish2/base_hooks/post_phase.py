@@ -24,7 +24,7 @@ class PostPhaseHook(HookBaseClass):
     manipulate it.
     """
 
-    def post_validate(self, publish_tree):
+    def post_validate(self, publish_tree, publish_manager):
         """
         This method is executed after the validation pass has completed for each
         item in the tree, before the publish pass.
@@ -73,7 +73,7 @@ class PostPhaseHook(HookBaseClass):
         """
         self.logger.debug("Executing post validate hook method...")
 
-    def post_publish(self, publish_tree):
+    def post_publish(self, publish_tree, publish_manager):
         """
         This method is executed after the publish pass has completed for each
         item in the tree, before the finalize pass.
@@ -98,7 +98,7 @@ class PostPhaseHook(HookBaseClass):
         """
         self.logger.debug("Executing post publish hook method...")
 
-    def post_finalize(self, publish_tree):
+    def post_finalize(self, publish_tree, publish_manager):
         """
         This method is executed after the finalize pass has completed for each
         item in the tree.

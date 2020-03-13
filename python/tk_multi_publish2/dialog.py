@@ -482,7 +482,7 @@ class AppDialog(QtGui.QWidget):
             
             #instead of returning just one settings dict, get_settings will return a dict of task.name : settings dict
             #so we can set each tasks' settings differently
-            allTaskSettings = self._current_tasks.get_settings(selected_tasks, widget)
+            allTaskSettings = self._current_tasks.get_settings(widget, selected_tasks)
         else:
             # TODO: Implement getting the settings from the generic UI, if we ever implement one.
             #widget = None

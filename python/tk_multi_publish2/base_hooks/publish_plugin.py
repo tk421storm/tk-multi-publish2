@@ -449,7 +449,7 @@ class PublishPlugin(HookBaseClass):
         # return the description group box as the widget to display
         return description_group_box
 
-    def get_ui_settings(self, widget):
+    def get_ui_settings(self, widget, selected_tasks):
         """
         Invoked by the Publisher when the selection changes. This method gathers the settings
         on the previously selected task, so that they can be later used to repopulate the
@@ -473,14 +473,22 @@ class PublishPlugin(HookBaseClass):
             }
 
         :param widget: The widget that was created by `create_settings_widget`
+        :param selected_tasks: a list of selected tasks, including access to PublishItems
         """
 
         # the default implementation does not show any editable widgets, so this
         # is a no-op. this method is required to be defined in order for the
         # custom UI to show up in the app
-        return {}
+        
+        # we need to return an empty dictionary for each item in the selected_tasks dictionary
+        allTaskSettings={}
+        for task in selected_tasks:
+            item=task.item
+            allTaskSettings[item.name]={}
+            
+        return allTaskSettings
 
-    def set_ui_settings(self, widget, settings):
+    def set_ui_settings(self, widget, settings, tasks):
         """
         Allows the custom UI to populate its fields with the settings from the
         currently selected tasks.
@@ -518,6 +526,7 @@ class PublishPlugin(HookBaseClass):
         :param widget: The widget that was created by `create_settings_widget`
         :param settings: a list of dictionaries of settings for each selected
             task.
+        :param tasks: a list of selected tasks including PublishItems
         """
 
         # the default implementation does not show any editable widgets, so this
