@@ -517,7 +517,7 @@ class AppDialog(QtGui.QWidget):
             for k, v in task.settings.iteritems():
                 settings_dict[k] = v.value
             tasks_settings.append(settings_dict)
-
+            
         if selected_tasks.has_custom_ui:
             try:
                 #also pass tasks, for more complex per-item settings
@@ -1078,6 +1078,18 @@ class AppDialog(QtGui.QWidget):
 
         # remember that validation has completed at least once
         self._validation_run = True
+        
+        #here we should attempt to update the gui, in case the currently selected task widget's
+        #info has been changed by the validation process (say, display an output path to the user)
+        #
+        logger.debug('Attempting to update UI after validation (if task selection homogeneous')
+        #make sure the selection is up-to-date
+        items = self.ui.items_tree.selectedItems()
+
+        if self._is_task_selection_homogeneous(items):
+            # We should update the tasks details ui.
+            publish_tasks = _TaskSelection([item.get_publish_instance() for item in items])
+            self._push_settings_into_ui(publish_tasks)
 
         return num_issues
 
