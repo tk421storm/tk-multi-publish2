@@ -97,6 +97,12 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
         # do if for just this item
         # first store it in our data model
         self.setData(0, self.CHECKBOX_ROLE, state)
+        #the task doesn't get set to the right status, so we need to do it manually
+        try:
+            self.get_publish_instance().setActive(state)
+        except:
+        	pass
+        
         self._embedded_widget.set_checkbox_value(self.data(0, self.CHECKBOX_ROLE))
         if state == QtCore.Qt.Checked:
             # ensure all children are checked
@@ -153,6 +159,13 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
 
     def set_status(self, *args, **kwargs):
         self._embedded_widget.set_status(*args, **kwargs)
+        if self.get_publish_instance():
+            #print "setting status on "+str(self.get_publish_instance())+", ("+str(self.get_publish_instance().__class__)+")"
+            #print self.get_publish_instance().setStatus
+            self.get_publish_instance().setStatus(args[0])
+        
+    def get_status(self):
+        self._embedded_widget.get_status()
 
     # message is for the status icon tooltip. The status is propagated to
     # parents, but the message is not.
@@ -161,12 +174,22 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
         Traverse all parents and set them to be a certain status
         """
         self._embedded_widget.set_status(status, message, info_below)
+        if self.get_publish_instance():
+            self.get_publish_instance().setStatus(status)
         if self.parent():
             self.parent().set_status_upwards(
                 status,
                 "There are issues with some of the items in this group.",
                 True
             )
+            
+    #check for and return all statuses from parents
+    def get_status_upwards(self):
+    	statuses=[(str(self), self._embedded_widget.get_status())]
+    	if self.parent():
+    		statuses+=self.parent().get_status_upwards()
+    		
+    	return statuses
 
     def validate(self, standalone):
         """

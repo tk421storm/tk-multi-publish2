@@ -86,7 +86,8 @@ class PublishItem(object):
         "_thumbnail_path",
         "_thumbnail_pixmap",
         "_type_display",
-        "_type_spec"
+        "_type_spec",
+        "_status"
     ]
 
     @classmethod
@@ -120,6 +121,7 @@ class PublishItem(object):
         new_item._thumbnail_enabled = item_dict["thumbnail_enabled"]
         new_item._thumbnail_explicit = item_dict["thumbnail_explicit"]
         new_item._thumbnail_path = item_dict["thumbnail_path"]
+        new_item._status = item_dict['status']
 
         # create the children of this item
         for child_dict in item_dict["children"]:
@@ -202,6 +204,7 @@ class PublishItem(object):
         self._thumbnail_pixmap = None
         self._type_display = type_display
         self._type_spec = type_spec
+        self._status = 0
 
     def __del__(self):
         """
@@ -258,6 +261,7 @@ class PublishItem(object):
             "thumbnail_path": self._thumbnail_path,
             "type_display": self.type_display,
             "type_spec": self.type_spec,
+            "status": self.status
         }
 
     def __repr__(self):
@@ -881,6 +885,18 @@ class PublishItem(object):
           JSON-serialized.
         """
         return self._global_properties
+       
+    def status(self):
+        """The display status of the task."""
+        return self._status
+
+    def setStatus(self, status):
+        '''sets the status of the task (from the ui/manager)
+        
+           there are confusing singals & slots that prevent the ui from sucessfully
+           setting the status of an item. this function can safely be called from
+           the ui for that purpose'''
+        self._status = status
 
     @property
     def tasks(self):

@@ -11,6 +11,9 @@
 from contextlib import contextmanager
 import traceback
 
+#python 2 only
+from inspect import getargspec
+
 import sgtk
 from .instance_base import PluginInstanceBase
 
@@ -186,6 +189,31 @@ class PublishPluginInstance(PluginInstanceBase):
             self.logger.error("Validation failed.")
 
         return status
+       
+    def run_rollback(self, settings, item):
+        """
+        Executes the rollback logic for this plugin instance.
+        
+        Not all plugins will have rollback functions; if they dont, this will pass
+
+        :param settings: Dictionary of settings
+        :param item: Item to analyze
+        :return: True if rollback passed, False otherwise.
+        """
+
+        with self._handle_plugin_error(None, "Error Rolling back: %s"):
+            try:
+                status = self._hook_instance.rollback(settings, item)
+            except:
+                self.logger.debug('No rollback function is defined for '+str(self._hook_instance.name))
+                return False
+
+            if status:
+                self.logger.debug("Rollback successful!")
+            else:
+                self.logger.error("Rollback failed.")
+    
+            return status
 
     def run_publish(self, settings, item):
         """
@@ -194,8 +222,15 @@ class PublishPluginInstance(PluginInstanceBase):
         :param settings: Dictionary of settings
         :param item: Item to analyze
         """
-        with self._handle_plugin_error("Publish complete!", "Error publishing: %s"):
-            self._hook_instance.publish(settings, item)
+        with self._handle_plugin_error(None, "Error publishing: %s"):
+            status = self._hook_instance.publish(settings, item)
+            
+        if status:
+            self.logger.debug("Publish successful!")
+        else:
+            self.logger.error("Publish failed.")
+
+        return status
 
     def run_finalize(self, settings, item):
         """
@@ -204,8 +239,15 @@ class PublishPluginInstance(PluginInstanceBase):
         :param settings: Dictionary of settings
         :param item: Item to analyze
         """
-        with self._handle_plugin_error("Finalize complete!", "Error finalizing: %s"):
-            self._hook_instance.finalize(settings, item)
+        with self._handle_plugin_error(None, "Error finalizing: %s"):
+            status = self._hook_instance.finalize(settings, item)
+            
+        if status:
+            self.logger.debug("Finalization successful!")
+        else:
+            self.logger.error("Finalization failed.")
+
+        return status
 
     ############################################################################
     # ui methods
@@ -227,7 +269,7 @@ class PublishPluginInstance(PluginInstanceBase):
         with self._handle_plugin_error(None, "Error laying out widgets: %s"):
             return self._hook_instance.create_settings_widget(parent)
 
-    def run_get_ui_settings(self, parent):
+    def run_get_ui_settings(self, parent, selected_tasks=None):
         """
         Retrieves the settings from the custom UI.
 
@@ -235,6 +277,9 @@ class PublishPluginInstance(PluginInstanceBase):
 
         :param parent: Parent widget
         :type parent: :class:`QtGui.QWidget`
+        
+        :param selected_tasks: a list of tasks selected in the gui
+        :type selected_tasks: List of PublishTask instances
         """
 
         # nothing to do if running without a UI
@@ -242,9 +287,16 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error reading settings from UI: %s"):
-            return self._hook_instance.get_ui_settings(parent)
+            #we'll need to determine how the plugin was coded - if it can accept the selected_tasks variable, pass it
+            #note that we'll have to replace this with Signature as of python 3
+            function=self._hook_instance.get_ui_settings
+            args=len(getargspec(function)[0])
+            if args==3:
+                return function(parent, selected_tasks)
+            else:
+                return function(parent)
 
-    def run_set_ui_settings(self, parent, settings):
+    def run_set_ui_settings(self, parent, settings, selected_tasks=None):
         """
         Provides a list of settings from the custom UI. It is the responsibility of the UI
         handle different values for the same setting.
@@ -261,7 +313,14 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error writing settings to UI: %s"):
-            self._hook_instance.set_ui_settings(parent, settings)
+            #we'll need to determine how the plugin was coded - if it can accept the selected_tasks variable, pass it
+            #note that we'll have to replace this with Signature as of python 3
+            function=self._hook_instance.set_ui_settings
+            args=len(getargspec(function)[0])
+            if args==4:
+                return function(parent, settings, selected_tasks)
+            else:
+                return function(parent, settings)
 
     @contextmanager
     def _handle_plugin_error(self, success_msg, error_msg):
