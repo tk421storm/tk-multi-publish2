@@ -23,7 +23,7 @@ class CustomTreeWidgetBase(QtGui.QFrame):
     Each item has got the following associated properties:
 
     - An area which can either be a checkbox for selection
-      or a "dot" which signals progress udpates
+      or a "dot" which signals progress updates
 
     - An icon
 
@@ -57,12 +57,16 @@ class CustomTreeWidgetBase(QtGui.QFrame):
         self._icon_lookup = {
             self.NEUTRAL: None,
             self.VALIDATION: QtGui.QPixmap(":/tk_multi_publish2/status_validate.png"),
-            self.VALIDATION_ERROR: QtGui.QPixmap(":/tk_multi_publish2/status_warning.png"),
+            self.VALIDATION_ERROR: QtGui.QPixmap(
+                ":/tk_multi_publish2/status_warning.png"
+            ),
             self.PUBLISH: QtGui.QPixmap(":/tk_multi_publish2/status_publish.png"),
             self.PUBLISH_ERROR: QtGui.QPixmap(":/tk_multi_publish2/status_error.png"),
             self.FINALIZE: QtGui.QPixmap(":/tk_multi_publish2/status_success.png"),
             self.FINALIZE_ERROR: QtGui.QPixmap(":/tk_multi_publish2/status_error.png"),
-            self.VALIDATION_STANDALONE: QtGui.QPixmap(":/tk_multi_publish2/status_success.png"),
+            self.VALIDATION_STANDALONE: QtGui.QPixmap(
+                ":/tk_multi_publish2/status_success.png"
+            ),
         }
         self._status_icon = None
 
@@ -131,16 +135,14 @@ class CustomTreeWidgetBase(QtGui.QFrame):
                     "ItemWidget",
                     "<p>%s</p>" % (message,),
                     None,
-                    QtGui.QApplication.UnicodeUTF8
+                    QtGui.QApplication.UnicodeUTF8,
                 )
             )
 
             self.ui.status.show()
             self._status_icon = QtGui.QIcon()
             self._status_icon.addPixmap(
-                self._icon_lookup[status],
-                QtGui.QIcon.Normal,
-                QtGui.QIcon.Off
+                self._icon_lookup[status], QtGui.QIcon.Normal, QtGui.QIcon.Off
             )
             self.ui.status.setIcon(self._status_icon)
             

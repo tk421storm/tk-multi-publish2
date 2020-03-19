@@ -39,11 +39,7 @@ class PublishPluginInstance(PluginInstanceBase):
 
         self._icon_pixmap = None
 
-        super(PublishPluginInstance, self).__init__(
-            path,
-            settings,
-            publish_logger
-        )
+        super(PublishPluginInstance, self).__init__(path, settings, publish_logger)
 
     def _create_hook_instance(self, path):
         """
@@ -54,8 +50,7 @@ class PublishPluginInstance(PluginInstanceBase):
         """
         bundle = sgtk.platform.current_bundle()
         hook = bundle.create_hook_instance(
-            path,
-            base_class=bundle.base_hooks.PublishPlugin
+            path, base_class=bundle.base_hooks.PublishPlugin
         )
         hook.id = path
         return hook
@@ -158,12 +153,13 @@ class PublishPluginInstance(PluginInstanceBase):
             error_msg = traceback.format_exc()
             self._logger.error(
                 "Error running accept for %s" % self,
-                extra=_get_error_extra_info(error_msg)
+                extra=_get_error_extra_info(error_msg),
             )
             return {"accepted": False}
         finally:
             if not sgtk.platform.current_engine().has_ui:
                 from sgtk.platform.qt import QtCore
+
                 QtCore.QCoreApplication.processEvents()
 
     def run_validate(self, settings, item):
@@ -181,7 +177,9 @@ class PublishPluginInstance(PluginInstanceBase):
         # check that we are not trying to publish to a site level context
         if item.context.project is None:
             status = False
-            self.logger.error("Please link '%s' to a Shotgun object and task!" % item.name)
+            self.logger.error(
+                "Please link '%s' to a Shotgun object and task!" % item.name
+            )
 
         if status:
             self.logger.debug("Validation successful!")
@@ -342,16 +340,17 @@ class PublishPluginInstance(PluginInstanceBase):
         except Exception as e:
             exception_msg = traceback.format_exc()
             self._logger.error(
-                error_msg % (e,),
-                extra=_get_error_extra_info(exception_msg)
+                error_msg % (e,), extra=_get_error_extra_info(exception_msg)
             )
             raise
         else:
             if success_msg:
                 self._logger.debug(success_msg)
         finally:
-            if not sgtk.platform.current_engine().has_ui:
+            if sgtk.platform.current_engine().has_ui:
+                # If we have a UI process the events so that the UI can update mid operation.
                 from sgtk.platform.qt import QtCore
+
                 QtCore.QCoreApplication.processEvents()
 
     def _load_plugin_icon(self):
@@ -371,11 +370,9 @@ class PublishPluginInstance(PluginInstanceBase):
             if icon_path:
                 try:
                     pixmap = QtGui.QPixmap(icon_path)
-                except Exception, e:
+                except Exception as e:
                     self._logger.warning(
-                        "%r: Could not load icon '%s': %s" % (
-                            self, icon_path, e
-                        )
+                        "%r: Could not load icon '%s': %s" % (self, icon_path, e)
                     )
         except AttributeError:
             # plugin does not have an icon
@@ -400,6 +397,6 @@ def _get_error_extra_info(error_msg):
         "action_show_more_info": {
             "label": "Error Details",
             "tooltip": "Show the full error tack trace",
-            "text": "<pre>%s</pre>" % (error_msg,)
+            "text": "<pre>%s</pre>" % (error_msg,),
         }
     }

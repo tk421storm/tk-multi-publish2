@@ -22,13 +22,14 @@ class PublishManager(object):
     """
     This class is used for managing and executing publishes.
     """
+
     __slots__ = [
         "_bundle",
         "_logger",
         "_tree",
         "_collector_instance",
         "_processed_contexts",
-        "_post_phase_hook"
+        "_post_phase_hook",
     ]
 
     ############################################################################
@@ -87,10 +88,10 @@ class PublishManager(object):
         # load the phose phase hook
         logger.debug("Loading post phase hook...")
         post_phase_hook_path = self._bundle.get_setting(
-            self.CONFIG_POST_PHASE_HOOK_PATH)
+            self.CONFIG_POST_PHASE_HOOK_PATH
+        )
         self._post_phase_hook = self._bundle.create_hook_instance(
-            post_phase_hook_path,
-            base_class=self._bundle.base_hooks.PostPhaseHook
+            post_phase_hook_path, base_class=self._bundle.base_hooks.PostPhaseHook
         )
 
     def collect_files(self, file_paths):
@@ -117,8 +118,7 @@ class PublishManager(object):
 
             if self._path_already_collected(file_path):
                 logger.debug(
-                    "Skipping previously collected file path: '%s'" %
-                    (file_path,)
+                    "Skipping previously collected file path: '%s'" % (file_path,)
                 )
             else:
                 logger.debug("Collecting file path: %s" % (file_path,))
@@ -126,8 +126,7 @@ class PublishManager(object):
                 # we supply the root item of the tree for parenting of items
                 # that are collected.
                 self._collector_instance.run_process_file(
-                    self.tree.root_item,
-                    file_path
+                    self.tree.root_item, file_path
                 )
 
             # get a list of all items in the tree after collection
@@ -146,8 +145,7 @@ class PublishManager(object):
                 if file_item.parent == self.tree.root_item:
                     # only top-level items can be marked as persistent
                     file_item.persistent = True
-                file_item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH] = \
-                    file_path
+                file_item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH] = file_path
 
             # attach the appropriate plugins to the new items
             self._attach_plugins(new_file_items)
@@ -179,8 +177,7 @@ class PublishManager(object):
 
         # we supply the root item of the tree for parenting of items that
         # are collected.
-        self._collector_instance.run_process_current_session(
-            self.tree.root_item)
+        self._collector_instance.run_process_current_session(self.tree.root_item)
 
         # get a list of all items in the tree after collection
         items_after = list(self.tree)
@@ -230,7 +227,7 @@ class PublishManager(object):
         # get the first task
         task = None
         try:
-            task = task_generator.next()
+            task = next(task_generator)
         except StopIteration:
             pass
 
@@ -293,7 +290,7 @@ class PublishManager(object):
             # being processed.
             try:
                 is_valid = task.validate()
-            except Exception, e:
+            except Exception as e:
                 is_valid = False
                 error = e
 
@@ -310,6 +307,7 @@ class PublishManager(object):
         self._post_phase_hook.post_validate(
             self.tree, self
         )
+
 
         return failed_to_validate
 
@@ -477,7 +475,8 @@ class PublishManager(object):
         for item in self.tree.persistent_items:
             if self.PROPERTY_KEY_COLLECTED_FILE_PATH in item.properties:
                 collected_paths.append(
-                    item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH])
+                    item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH]
+                )
 
         return collected_paths
 
@@ -509,8 +508,8 @@ class PublishManager(object):
 
             context_plugins = self._load_publish_plugins(item_context)
             logger.debug(
-                "Offering %s plugins for context: %s" %
-                (len(context_plugins), item_context)
+                "Offering %s plugins for context: %s"
+                % (len(context_plugins), item_context)
             )
 
             for context_plugin in context_plugins:
@@ -547,15 +546,15 @@ class PublishManager(object):
             if fnmatch.fnmatch(item.type_spec, item_filter):
                 # there is a match!
                 logger.debug(
-                    "Item %s with spec '%s' matches plugin filters: '%s'" %
-                    (item, item.type_spec, item_filter)
+                    "Item %s with spec '%s' matches plugin filters: '%s'"
+                    % (item, item.type_spec, item_filter)
                 )
                 return True
 
         # no filters match the item's type
         logger.debug(
-            "Item %s with spec '%s' does not match any plugin filters: '%s'" %
-            (item, item.type_spec, publish_plugin.item_filters)
+            "Item %s with spec '%s' does not match any plugin filters: '%s'"
+            % (item, item.type_spec, publish_plugin.item_filters)
         )
         return False
 
@@ -564,15 +563,11 @@ class PublishManager(object):
         Load the collector plugin for the current bundle configuration/context.
         """
 
-        collector_hook_path = self._bundle.get_setting(
-            self.CONFIG_COLLECTOR_HOOK_PATH)
-        collector_settings = self._bundle.get_setting(
-            self.CONFIG_COLLECTOR_SETTINGS)
+        collector_hook_path = self._bundle.get_setting(self.CONFIG_COLLECTOR_HOOK_PATH)
+        collector_settings = self._bundle.get_setting(self.CONFIG_COLLECTOR_SETTINGS)
 
         self._collector_instance = CollectorPluginInstance(
-            collector_hook_path,
-            collector_settings,
-            self.logger
+            collector_hook_path, collector_settings, self.logger
         )
 
     def _load_publish_plugins(self, context):
@@ -590,22 +585,22 @@ class PublishManager(object):
         if context == self._bundle.context:
             # if the context matches the bundle, we don't need to do any extra
             # work since the settings are already accessible
-            logger.debug(
-                "Finding publish plugin settings for context: %s" % (context,))
-            plugin_settings = self._bundle.get_setting(
-                self.CONFIG_PLUGIN_DEFINITIONS)
+            logger.debug("Finding publish plugin settings for context: %s" % (context,))
+            plugin_settings = self._bundle.get_setting(self.CONFIG_PLUGIN_DEFINITIONS)
         else:
             # load the plugins from the supplied context. this means executing
             # the pick environment hook and reading from disk. this is why we
             # cache the plugins.
             logger.debug(
-                "Finding publish plugin settings via pick_environment for context: %s" % (context,))
+                "Finding publish plugin settings via pick_environment for context: %s"
+                % (context,)
+            )
             context_settings = sgtk.platform.engine.find_app_settings(
                 engine.name,
                 self._bundle.name,
                 self._bundle.sgtk,
                 context,
-                engine_instance_name=engine.instance_name
+                engine_instance_name=engine.instance_name,
             )
 
             app_settings = None
@@ -624,8 +619,8 @@ class PublishManager(object):
                 plugin_settings = app_settings[self.CONFIG_PLUGIN_DEFINITIONS]
             else:
                 logger.debug(
-                    "Could not find publish plugin settings for context: %s" %
-                    (context,)
+                    "Could not find publish plugin settings for context: %s"
+                    % (context,)
                 )
                 plugin_settings = []
 
@@ -645,7 +640,7 @@ class PublishManager(object):
                 publish_plugin_instance_name,
                 publish_plugin_hook_path,
                 publish_plugin_settings,
-                self.logger
+                self.logger,
             )
             plugins.append(plugin_instance)
             logger.debug("Created publish plugin: %s" % (plugin_instance,))
@@ -665,8 +660,7 @@ class PublishManager(object):
         # the supplied path, then the path has already been collected.
         for item in self.tree.persistent_items:
             if self.PROPERTY_KEY_COLLECTED_FILE_PATH in item.properties:
-                collected_path = \
-                    item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH]
+                collected_path = item.properties[self.PROPERTY_KEY_COLLECTED_FILE_PATH]
                 if collected_path == file_path:
                     return True
 
@@ -686,14 +680,12 @@ class PublishManager(object):
         for item in self.tree:
 
             if not item.active:
-                logger.debug(
-                    "Skipping item '%s' because it is inactive" % (item,))
+                logger.debug("Skipping item '%s' because it is inactive" % (item,))
                 continue
 
             if not item.tasks:
                 logger.debug(
-                    "Skipping item '%s' because it has no tasks attached." %
-                    (item,)
+                    "Skipping item '%s' because it has no tasks attached." % (item,)
                 )
                 continue
 
@@ -704,5 +696,5 @@ class PublishManager(object):
                     logger.debug("Skipping inactive task: %s" % (task,))
                     continue
 
-                status = (yield task)
+                status = yield task
                 logger.debug("Task %s status: %s" % (task, status))

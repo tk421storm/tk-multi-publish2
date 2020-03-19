@@ -178,9 +178,7 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
             self.get_publish_instance().setStatus(status)
         if self.parent():
             self.parent().set_status_upwards(
-                status,
-                "There are issues with some of the items in this group.",
-                True
+                status, "There are issues with some of the items in this group.", True
             )
             
     #check for and return all statuses from parents
@@ -197,7 +195,8 @@ class TreeNodeBase(QtGui.QTreeWidgetItem):
         """
         if standalone:
             self._embedded_widget.set_status(
-                self._embedded_widget.VALIDATION_STANDALONE)
+                self._embedded_widget.VALIDATION_STANDALONE
+            )
         else:
             self._embedded_widget.set_status(self._embedded_widget.VALIDATION)
         return True
