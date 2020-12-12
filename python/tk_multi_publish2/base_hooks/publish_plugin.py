@@ -189,7 +189,7 @@ class PublishPlugin(HookBaseClass):
         parameter in the :meth:`accept`, :meth:`validate`, :meth:`publish`, and
         :meth:`finalize` methods.
 
-        The values also drive the custom UI defined by the plugin whick allows
+        The values also drive the custom UI defined by the plugin which allows
         artists to manipulate the settings at runtime. See the
         :meth:`create_settings_widget`, :meth:`set_ui_settings`, and
         :meth:`get_ui_settings` for additional information.
@@ -415,12 +415,13 @@ class PublishPlugin(HookBaseClass):
     # allows clients to write their own publish plugins while deferring custom
     # UI settings implementations until needed.
 
-    def create_settings_widget(self, parent):
+    def create_settings_widget(self, parent, items=None):
         """
         Creates a Qt widget, for the supplied parent widget (a container widget
         on the right side of the publish UI).
 
-        :param parent: The parent to use for the widget being created
+        :param parent: The parent to use for the widget being created.
+        :param items: A list of PublishItems the selected publish tasks are parented to.
         :return: A QtGui.QWidget or subclass that displays information about
             the plugin and/or editable widgets for modifying the plugin's
             settings.
@@ -523,13 +524,14 @@ class PublishPlugin(HookBaseClass):
         there is more than one item in the list and the publisher will inform
         the user than only one task of that type can be edited at a time.
 
-        :param widget: The widget that was created by `create_settings_widget`
+        :param widget: The widget that was created by `create_settings_widget`.
         :param settings: a list of dictionaries of settings for each selected
             task.
         :param tasks: a list of selected tasks including PublishItems
-        """
+
 
         # the default implementation does not show any editable widgets, so this
         # is a no-op. this method is required to be defined in order for the
         # custom UI to show up in the app
+        """
         pass

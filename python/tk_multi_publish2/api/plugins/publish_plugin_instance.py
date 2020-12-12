@@ -11,8 +11,14 @@
 from contextlib import contextmanager
 import traceback
 
-#python 2 only
-from inspect import getargspec
+try:
+    # In Python 3 the interface changed, getargspec is now deprecated.
+    # getfullargspec was deprecated in 3.5, but that was reversed in 3.6.
+    from inspect import getfullargspec as getargspec
+except ImportError:
+    # Fallback for Python 2
+    from inspect import getargspec
+
 
 import sgtk
 from .instance_base import PluginInstanceBase
@@ -157,7 +163,7 @@ class PublishPluginInstance(PluginInstanceBase):
             )
             return {"accepted": False}
         finally:
-            if not sgtk.platform.current_engine().has_ui:
+            if sgtk.platform.current_engine().has_ui:
                 from sgtk.platform.qt import QtCore
 
                 QtCore.QCoreApplication.processEvents()
@@ -250,7 +256,7 @@ class PublishPluginInstance(PluginInstanceBase):
     ############################################################################
     # ui methods
 
-    def run_create_settings_widget(self, parent):
+    def run_create_settings_widget(self, parent, items):
         """
         Creates a custom widget to edit a plugin's settings.
 
@@ -258,6 +264,7 @@ class PublishPluginInstance(PluginInstanceBase):
 
         :param parent: Parent widget
         :type parent: :class:`QtGui.QWidget`
+        :param items: A list of PublishItems the selected tasks are parented to.
         """
 
         # nothing to do if running without a UI
@@ -265,7 +272,7 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error laying out widgets: %s"):
-            return self._hook_instance.create_settings_widget(parent)
+
 
     def run_get_ui_settings(self, parent, selected_tasks=None):
         """
@@ -295,6 +302,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 return function(parent)
 
     def run_set_ui_settings(self, parent, settings, selected_tasks=None):
+
         """
         Provides a list of settings from the custom UI. It is the responsibility of the UI
         handle different values for the same setting.
@@ -304,6 +312,7 @@ class PublishPluginInstance(PluginInstanceBase):
         :param parent: Parent widget
         :type parent: :class:`QtGui.QWidget`
         :param settings: List of dictionary of settings as python literals.
+        :param items: A list of PublishItems the selected tasks are parented to.
         """
 
         # nothing to do if running without a UI
@@ -319,6 +328,7 @@ class PublishPluginInstance(PluginInstanceBase):
                 return function(parent, settings, selected_tasks)
             else:
                 return function(parent, settings)
+
 
     @contextmanager
     def _handle_plugin_error(self, success_msg, error_msg):

@@ -14,6 +14,7 @@ from traceback import format_exc
 from .api import PublishManager  # noqa
 from . import base_hooks  # noqa
 from . import util  # noqa
+from . import publish_tree_widget  # noqa
 
 
 def show_dialog(app):
@@ -43,6 +44,15 @@ def show_dialog(app):
     
     logger.info('Phosphene publish loaded')
 
-    # start ui
-    app.engine.show_dialog(display_name, app, AppDialog)
+    if app.pre_publish_hook.validate():
+        # start ui
+        if app.modal:
+            app.engine.show_modal(display_name, app, AppDialog)
+        else:
+            app.engine.show_dialog(display_name, app, AppDialog)
+    else:
+        app.logger.debug(
+            "%s validate returned False -- abort publish."
+            % app.pre_publish_hook.__class__.__name__
+        )
 

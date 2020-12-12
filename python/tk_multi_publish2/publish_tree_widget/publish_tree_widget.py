@@ -165,6 +165,13 @@ class PublishTreeWidget(QtGui.QTreeWidget):
         if not item.checked:
             ui_item.set_check_state(QtCore.Qt.Unchecked)
 
+        # If we have a bunch of active tasks followed by a bunch of inactive tasks, the addition
+        # of the inactive tasks does not trigger an update of the parent's checkbox (because the update
+        # relies on the checkbox.state_changed and the default is unchecked, so inactive tasks do not
+        # trigger a state change). Force a recalculation to keep the parent's check_state
+        # correct in all situation
+        ui_item.recompute_check_state()
+
         return ui_item
 
     def build_tree(self):
@@ -369,6 +376,26 @@ class PublishTreeWidget(QtGui.QTreeWidget):
             publish_item, checked=True, level=0, tree_parent=context_tree_node
         )
 
+    def root_items(self):
+        """
+        A generator that yields the root collected items in the tree.
+        These are stored under a top level context_item.
+        :return: TreeNodeItem
+        """
+        # The first item is always the summary even if it is hidden so skip that.
+        for context_index in range(1, self.topLevelItemCount()):
+            context_item = self.topLevelItem(context_index)
+            for child_index in range(context_item.childCount()):
+                yield context_item.child(child_index)
+
+    @property
+    def summary_node(self):
+        """
+        Returns the summary node item in the tree.
+        :return: TreeNodeSummary instance.
+        """
+        return self._summary_node
+
     def get_full_summary(self):
         """
         Compute a full summary report.
@@ -441,12 +468,8 @@ class PublishTreeWidget(QtGui.QTreeWidget):
 
         else:
             # summary hidden. select first item instead.
-            first_item = None
-            for context_index in range(1, self.topLevelItemCount()):
-                context_item = self.topLevelItem(context_index)
-                for child_index in range(context_item.childCount()):
-                    first_item = context_item.child(child_index)
-                    break
+            # get the first item from the root_items generator.
+            first_item = next(self.root_items(), None)
             if first_item:
                 self.setCurrentItem(first_item)
                 logger.debug("No summary node present. Selecting %s" % first_item)
