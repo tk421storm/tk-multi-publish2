@@ -3,11 +3,14 @@
 save / load stored bug reports
 
 '''
-
+from __future__ import print_function
 from uuid import uuid4
-from os import mkdir, remove, rmdir, listdir, utime
+from os import mkdir, remove, listdir, utime
 from os.path import join, isdir, exists
-from cPickle import dump, load
+try:
+	from cPickle import dump, load
+except:
+	from pickle import dump, load
 from traceback import format_exc
 from shutil import copy
 from platform import system
@@ -21,7 +24,7 @@ else:
 	
 storageLocation=join(storageBase, 'bugReports')
 	
-print "bugReports location "+str(storageLocation)
+print("bugReports location "+str(storageLocation))
 
 def touch(fname, times=None):
 	with open(fname, 'a'):
@@ -31,7 +34,7 @@ def touch(fname, times=None):
 def storeBug(subject, message, attachments):
 	'''store a bug report to the disk'''
 	
-	from Debug import debug
+	from . import debug
 	
 	bugID=uuid4().hex
 	bugDirectory=join(storageLocation, bugID)
@@ -76,7 +79,7 @@ def loadBug(bugFolder, removeIfSuccesful=True):
 	'''passed  a bug folder, attempt to load and return the bug dictionary stored there'''
 	
 	
-	from Debug import debug
+	from . import debug
 	
 	try:
 		if not exists(bugFolder):

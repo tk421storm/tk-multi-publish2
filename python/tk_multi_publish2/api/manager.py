@@ -356,7 +356,7 @@ class PublishManager(object):
             # being processed.
             try:
                 published = task.publish()
-            except Exception, e:
+            except Exception as e:
                 published = False
                 error = e
 
@@ -428,7 +428,7 @@ class PublishManager(object):
             # being processed.
             try:
                 finalized = task.finalize()
-            except Exception, e:
+            except Exception as e:
                 finalized = False
                 error = e
 

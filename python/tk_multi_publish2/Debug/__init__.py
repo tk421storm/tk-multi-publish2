@@ -3,12 +3,17 @@
 threaded debug log
 
 '''
-
+from __future__ import print_function
 from threading import Event
 from os.path import join, dirname, isdir, exists, getsize, realpath
 from os import makedirs, environ
 from multiprocessing import Queue
-from Queue import Empty, Full
+try:
+	#python2
+	from Queue import Empty, Full
+except:
+	#python3
+	from queue import Empty, Full
 from time import strftime, sleep, time
 from pprint import pprint
 from webbrowser import open as openURL
@@ -22,8 +27,8 @@ from datetime import datetime
 #get this modules install location
 currentRoot=dirname(realpath(__file__))
 
-from killer import killer
-from metrics import metricsEnabled, metricsQueue
+from .killer import killer
+from .metrics import metricsEnabled, metricsQueue
 
 #dont load the panel if we're in a terminal session (say on the monitor)
 try:
@@ -39,12 +44,12 @@ except ImportError:
 			from PySide2 import QtGui, QtCore, QtWidgets
 			gui=True
 		except:
-			print 'no gui availble'
+			print('no gui availble')
 			gui=False
 			
 if gui:
-	from panel import launchBugSubmitPanel
-from bugStorage import storeBug, storageBase
+	from .panel import launchBugSubmitPanel
+from .bugStorage import storeBug, storageBase
 
 #use a global log directory (ubuntu clears tmp too often)
 #use one directory for all logs
@@ -83,7 +88,7 @@ class DebugWriter(QtCore.QThread):
 		self._stopevent = Event()
 		self._sleepperiod = .1
 		self.recycle=0
-		print programName+" debugWriter starting"
+		print(programName+" debugWriter starting")
 		
 		##check that the debug folder exists
 		if not isdir(debugLoc):
@@ -123,7 +128,7 @@ class DebugWriter(QtCore.QThread):
 		if not exists(self.debugFile):
 			open(self.debugFile, 'w').write("<html><body>"+self.style)
 			
-		print " debugWriter outputing to "+self.debugFile
+		print(" debugWriter outputing to "+self.debugFile)
 
 		QtCore.QThread.__init__(self)#, name=name)
 		
@@ -222,7 +227,7 @@ class DebugWriter(QtCore.QThread):
 			if type(msg) is not str:
 				pprint(msg)
 			else:
-				print str(msg)
+				print(str(msg))
 			
 		msg=str(msg)
 		
@@ -272,9 +277,9 @@ class DebugWriter(QtCore.QThread):
 		with open(self.debugFile, 'a') as openFile:
 			try:
 				openFile.write(debugMessage)
-			except IOError, e:
-				print "debug error - cannot write to disk"
-				print e
+			except IOError as e:
+				print("debug error - cannot write to disk")
+				print(e)
 				
 
 				
@@ -299,13 +304,13 @@ class DebugWriter(QtCore.QThread):
 		if userReport!=None:
 			bugName="PHOSPHENE_ERROR_REPORT: "+strftime("%m-%d-%H:%M:%S (")+login+", "+hostname+"): "+toolName
 	
-			print "sending "+bugName
+			print("sending "+bugName)
 			#since we're in a locked environment, we can't always send email
 			#instead we'll store the bug in a network-accesible location
 			#a threaded process can then keep tabs on that folder and perform any action (say, email) on bugs there
 			storeBug(bugName, userReport+"<br /><br />"+str(extraInfo), logFileList)
 		else:
-			print "user cancelled bug report"
+			print("user cancelled bug report")
 		
 	
 
@@ -328,10 +333,10 @@ class DebugWriter(QtCore.QThread):
 					if len(results)>=2:
 						self.debug(*results)
 					else:
-						print "debug received odd-sized object "+str(results)
+						print("debug received odd-sized object "+str(results))
 				except:
-					print "debug error"
-					print format_exc()
+					print("debug error")
+					print(format_exc())
 									
 				#make sure the debug file doesn't get to big, if it does, wipe it
 				#only do this every 200 times we cycle through
@@ -370,7 +375,7 @@ class DebugWriter(QtCore.QThread):
 			except Full:
 				sleep(self._sleepperiod)
 				
-		print programName+" debugWriter ending"
+		print(programName+" debugWriter ending")
 				
 			
 
@@ -465,7 +470,7 @@ def bugSubmit(toolName, extraInfo=None, logFile=None, parentPanel=None):
 ###
 ############
 
-from pythonLogging import DebugHandler
+from .pythonLogging import DebugHandler
 
 debugQueue=Queue()
 bugSubmitQueue=Queue()

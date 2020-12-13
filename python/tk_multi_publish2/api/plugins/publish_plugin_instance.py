@@ -272,6 +272,7 @@ class PublishPluginInstance(PluginInstanceBase):
             return None
 
         with self._handle_plugin_error(None, "Error laying out widgets: %s"):
+            return self._hook_instance.create_settings_widget(parent)
 
 
     def run_get_ui_settings(self, parent, selected_tasks=None):

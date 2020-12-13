@@ -3,9 +3,13 @@
 thread to submit metrics
 
 '''
-
+from __future__ import print_function
 from multiprocessing import Queue
-from Queue import Empty, Full
+try:
+	from Queue import Empty, Full
+except:
+	#python3
+	from queue import Empty, Full
 from threading import Thread, Event
 from time import sleep
 from os.path import join
@@ -51,7 +55,7 @@ if metricsEnabled:
 			
 			self._stopevent=Event()
 			
-			print "mongo submit thread starting"
+			print("mongo submit thread starting")
 			
 			#create mongo connection
 			import pymongo #@UnresolvedImport
@@ -69,7 +73,7 @@ if metricsEnabled:
 				self.db=self.client['metrics']
 				
 			except self.pymongo.errors.ConnectionFailure: #@UndefinedVariable
-				print "mongo server not available, no metrics submission will occur"
+				print("mongo server not available, no metrics submission will occur")
 				self.db=None
 				self._stopevent.set()
 
@@ -104,7 +108,7 @@ if metricsEnabled:
 				collection.insert_one(metricData)
 			else:
 				
-				print "metric discarded"
+				print("metric discarded")
 				
 		def join(self, timeout=None):
 			'''stop the thread'''

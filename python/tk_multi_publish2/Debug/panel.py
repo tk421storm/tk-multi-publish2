@@ -7,10 +7,11 @@ bug report panel (entirely QT based)
 from traceback import format_exc
 from os.path import join
 
-from sgtk.platform.qt import QtCore, QtGui
+from sgtk.platform.qt import QtCore, QtGui #@UnresolvedImport
 		
 QPalatte=QtGui.QPalette
 QPixmap=QtGui.QPixmap
+QCoreApplication=QtCore.QCoreApplication
 		
 #Nuke11 fix
 try:
@@ -25,18 +26,22 @@ try:
 	QApplication=QtGui.QApplication
 	qApp=QtGui.qApp
 	QSpacerItem=QtGui.QSpacerItem
+	qAppCore=QtGui.qApp
+	QApplication=QtGui.QApplication
 except:
-	QWidget=QtWidgets.QWidget
-	QFrame=QtWidgets.QFrame
-	QDialog=QtWidgets.QDialog
-	QGridLayout=QtWidgets.QGridLayout
-	QLabel=QtWidgets.QLabel
-	QPlainTextEdit=QtWidgets.QPlainTextEdit
-	QDialogButtonBox=QtWidgets.QDialogButtonBox
-	QPushButton=QtWidgets.QPushButton
-	QApplication=QtWidgets.QApplication
-	qApp=QtWidgets.qApp
-	QSpacerItem=QtWidgets.QSpacerItem
+	QWidget=QtWidgets.QWidget #@UndefinedVariable
+	QFrame=QtWidgets.QFrame #@UndefinedVariable
+	QDialog=QtWidgets.QDialog #@UndefinedVariable
+	QGridLayout=QtWidgets.QGridLayout #@UndefinedVariable
+	QLabel=QtWidgets.QLabel #@UndefinedVariable
+	QPlainTextEdit=QtWidgets.QPlainTextEdit #@UndefinedVariable
+	QDialogButtonBox=QtWidgets.QDialogButtonBox #@UndefinedVariable
+	QPushButton=QtWidgets.QPushButton #@UndefinedVariable
+	qAppCore=QtWidgets.qApp #@UndefinedVariable
+	QApplication=QtWidgets.QApplication #@UndefinedVariable
+	qApp=QtWidgets.qApp #@UndefinedVariable
+	QSpacerItem=QtWidgets.QSpacerItem #@UndefinedVariable
+	QApplication=QtWidgets.QApplication #@UndefinedVariable
 	
 from . import currentRoot
 		
@@ -48,9 +53,35 @@ class QHLine(QFrame):
 		
 def _nuke_main_window():
 	"""Returns Nuke's main window"""
+	
+	#nuke 12.1, qApp is None-type
+	
+	qApp=qAppCore
+			
+	if str(qApp) is 'None':
+		#this is also none
+		#qApp=QApplication
+		qApp=QCoreApplication
+		print('using QApplication ('+str(qApp)+')for qApp')
+	else:
+		print('using qApp ('+str(qApp)+') for qApp')
+	
+	try:
+		#3dsmax, convert to QApplication
+		import PySide2 #@UnresolvedImport
+		
+		if isinstance(qApp, PySide2.QtCore.QCoreApplication):
+			import shiboken2 #@UnresolvedImport
+			qApp=shiboken2.wrapInstance(shiboken2.getCppPointer(QApplication.instance())[0], QApplication)
+	except:
+		print(format_exc())
+	
+	
 	for obj in qApp.topLevelWidgets():
-		if obj.inherits('QMainWindow') and obj.metaObject().className() == 'Foundry::UI::DockMainWindow':
-			return obj
+		if obj.inherits('QMainWindow'):
+			print(obj.metaObject().className())
+			if obj.metaObject().className() == 'Foundry::UI::DockMainWindow':
+				return obj
 	else:
 		return None
 		
@@ -64,11 +95,13 @@ class BugSubmitPanel(QDialog):
 	
 	def acceptor(self):
 		self.accepted=True
+		self.userDescription=self.description.toPlainText()
 		self.close()
 		#submit the report
 		
 	def cancellor(self):
 		self.accepted=False
+		self.userDescription=self.description.toPlainText()
 		self.close()
 	
 	def __init__(self, toolName, extraInfo, parent=None):
@@ -76,13 +109,18 @@ class BugSubmitPanel(QDialog):
 		QDialog.__init__(self, parent=_nuke_main_window())
 		
 		self.accepted=False
+		self.userDescription=''
+		
+		#these two lines are critical to prevent segfaults on cleanup
+		self.setWindowModality(QtCore.Qt.ApplicationModal)
+		self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 		
 		layout=QGridLayout()
 		
-		print 'bug submit window loading from '+str(currentRoot)
+		#print('bug submit window loading from '+str(currentRoot))
 		
 		bgPath=join(currentRoot,'assets','header.png')
-		print "loading bg image from "+bgPath
+		#print("loading bg image from "+bgPath)
 		background=QPixmap(bgPath)
 		bgPalatte=QPalatte()
 		bgPalatte.setBrush(QPalatte.Background, background)
@@ -145,7 +183,7 @@ def launchBugSubmitPanel(toolName, extraInfo, debugQueue=None, parentPanel=None)
 	#setup debugging
 	if not debugQueue:
 		def debug(inter, stringer):
-			print stringer
+			print(stringer)
 	else:
 		def debug(inter, stringer):
 			debugQueue.put_nowait((inter, stringer))
@@ -169,10 +207,8 @@ def launchBugSubmitPanel(toolName, extraInfo, debugQueue=None, parentPanel=None)
 				else:
 					#if app is nuke, we need to launch in main thread or else it will lock
 					#the function name is different in qt 4 and 5
-					if qtVersion==4:
-						function=app.applicationName
-					else:
-						function=app.applicationDisplayName
+					function=app.applicationDisplayName
+					
 					try:
 						if "Nuke" in function():
 							debug(3, "found nuke gui session")
@@ -200,13 +236,13 @@ def launchBugSubmitPanel(toolName, extraInfo, debugQueue=None, parentPanel=None)
 		#if for some reason, we failed to open the bug submit panel, we might be in an environment without it
 		#so we'll just submit the bug silently
 		message="Error launching bug submit panel: <br /><br />"+format_exc()
-		print message
+		print(message)
 		return message
 	
 def showPanel(toolName, extraInfo, parent=None):
 	panel=BugSubmitPanel(toolName, extraInfo, parent)
 	panel.exec_()
-	return (panel.accepted, panel.description.toPlainText())
+	return (panel.accepted, panel.userDescription)
 		
 		
 		

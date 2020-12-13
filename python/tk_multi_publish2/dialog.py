@@ -8,7 +8,10 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+from __future__ import print_function
 import traceback
+from os.path import dirname, realpath
+from imp import find_module, load_module
 from time import strftime
 
 import sgtk #@UnresolvedImport
@@ -38,6 +41,9 @@ shotgun_globals = sgtk.platform.import_framework(
 logger = sgtk.platform.get_logger(__name__)
 
 #bring in hacky version of phosphene bug report
+currentDirectory=dirname(realpath(__file__))
+module=find_module('Debug', [currentDirectory])
+Debug=load_module('Debug', *module)
 from Debug import launchBugSubmitPanel, fullDebugPath, login, hostname, programName, storeBug
 
 #store text values of statuses for logging
@@ -301,8 +307,7 @@ class AppDialog(QtGui.QWidget):
 
     def launchBugSubmitPanel(self, extraInfo=None):
         '''launch the phosphene bug submit window'''
-        pass
-        """
+
         if not extraInfo:
             extraInfo="user manual bug report"
         results=launchBugSubmitPanel("tk-multi-publish2", extraInfo, parentPanel=self)
@@ -310,13 +315,13 @@ class AppDialog(QtGui.QWidget):
             logFileList=[fullDebugPath]
             bugName="PHOSPHENE_ERROR_REPORT: "+strftime("%m-%d-%H:%M:%S (")+login+", "+hostname+"): "+programName
     
-            print "sending "+bugName
+            print("sending "+bugName)
             #since we're in a locked environment, we can't always send email
             #instead we'll store the bug in a network-accesible location
             #a threaded process can then keep tabs on that folder and perform any action (say, email) on bugs there
             storeBug(bugName, results+"<br /><br />"+str(extraInfo), logFileList)
             
-        """
+        
             
 
     def keyPressEvent(self, event):
@@ -1361,7 +1366,7 @@ class AppDialog(QtGui.QWidget):
 
                         for ui_item in list_items:
                             if isinstance(ui_item, TreeNodeTask):
-                                print "getting status for "+str(ui_item)+" ("+str(ui_item.__class__)+"): "+str(statusValues[ui_item._task.status()])+" (active: "+str(ui_item._task.active)+")"
+                                print("getting status for "+str(ui_item)+" ("+str(ui_item.__class__)+"): "+str(statusValues[ui_item._task.status()])+" (active: "+str(ui_item._task.active)+")")
                                 ui_item.set_status_upwards(ui_item._task.status(), "")
                                 #ui_item.set_check_state(ui_item._task.active)
                             elif isinstance(ui_item, TreeNodeItem):
@@ -1635,7 +1640,7 @@ class AppDialog(QtGui.QWidget):
                 else:
                     is_successful = ui_item.publish()
                     error_msg = "Unknown publish error!"
-            except Exception, e:
+            except Exception as e:
                 self.logger.warning('Exception occured publishing '+str(ui_item)+str(e))
                 ui_item.set_status_upwards(ui_item.STATUS_PUBLISH_ERROR, str(e))
 
@@ -1680,7 +1685,7 @@ class AppDialog(QtGui.QWidget):
 
                     is_successful = ui_item.finalize()
                     error_msg = "Unknown finalize error!"
-            except Exception, e:
+            except Exception as e:
                 ui_item.set_status_upwards(ui_item.STATUS_FINALIZE_ERROR, str(e))
                 raise
             else:

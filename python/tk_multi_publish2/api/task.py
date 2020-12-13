@@ -183,7 +183,7 @@ class PublishTask(object):
         return self._active
        
     def setActive(self, active_state):
-    	"""
+        """
         Explicitly set the active state.
 
         There are 3 active states that can be supplied:
@@ -194,7 +194,7 @@ class PublishTask(object):
         
         this function is not connected to any signals/slots, so it can be called without recursively calling other things
         """
-    	#print "setActive called on "+str(self)+" with state: "+str(active_state)
+        #print "setActive called on "+str(self)+" with state: "+str(active_state)
         self._active = active_state
 
     @active.setter
@@ -208,7 +208,7 @@ class PublishTask(object):
         * ``False``: Set the item to be inactive
         * ``None``: Clear the item's state, rely on inheritance within the tree
         """
-        print "active called on "+str(self)+" with state: "+str(active_state)
+        #print "active called on "+str(self)+" with state: "+str(active_state)
         self._active = active_state
 
     @property
@@ -287,12 +287,12 @@ class PublishTask(object):
         return self._name or self.plugin.name
        
     def status(self):
-		"""The display status of the task."""
-		return self._status
-	
+        """The display status of the task."""
+        return self._status
+
     def setStatus(self, status):
-		'''sets the status of the task (from the ui/manager)'''
-		self._status = status
+        '''sets the status of the task (from the ui/manager)'''
+        self._status = status
 
     @name.setter
     def name(self, new_name):
