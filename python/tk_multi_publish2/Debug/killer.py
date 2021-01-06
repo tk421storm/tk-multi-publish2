@@ -3,7 +3,7 @@
 deal with threads and parser on close
 
 '''
-
+from __future__ import print_function
 import signal
 from traceback import print_stack
 from multiprocessing import Queue
@@ -31,7 +31,7 @@ class GracefulKiller:
 		self.killQueue=Queue()
 
 	def exit_gracefully(self,signum, frame):
-		print "received "+str(signum)+" under "+str(self.parent)
+		print("received "+str(signum)+" under "+str(self.parent))
 		print_stack(frame)
 		self.exit_now()
 		

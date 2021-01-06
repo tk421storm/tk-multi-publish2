@@ -10,7 +10,7 @@
 
 import copy
 
-import sgtk
+import sgtk #@UnresolvedImport
 from .plugins import PluginSetting, PublishPluginInstance
 
 logger = sgtk.platform.get_logger(__name__)
@@ -67,12 +67,12 @@ class PublishTask(object):
         new_task._status = task_dict['status']
 
         # create all the setting instances from the data
-        for (k, setting) in task_dict["settings"].iteritems():
+        for (k, setting) in task_dict["settings"].items():
             new_setting = PluginSetting(
                 setting["name"],
                 setting["type"],
                 setting["default_value"],
-                setting["description"]
+                setting["description"],
             )
             new_setting.value = setting["value"]
             new_task._settings[k] = new_setting
@@ -86,8 +86,8 @@ class PublishTask(object):
 
         self._item = item
         self._plugin = plugin
-        self._name = None # task name override of plugin name
-        self._description = None # task description override of plugin desc.
+        self._name = None  # task name override of plugin name
+        self._description = None  # task description override of plugin desc.
 
         # need to make a deep copy of the settings as they may be modified
         self._settings = {}
@@ -109,7 +109,7 @@ class PublishTask(object):
 
         # Convert each of the settings to a dictionary.
         converted_settings = {}
-        for (k, setting) in self._settings.iteritems():
+        for (k, setting) in self._settings.items():
             converted_settings[k] = setting.to_dict()
 
         # build the full dictionary representation of this task
@@ -183,7 +183,7 @@ class PublishTask(object):
         return self._active
        
     def setActive(self, active_state):
-    	"""
+        """
         Explicitly set the active state.
 
         There are 3 active states that can be supplied:
@@ -194,7 +194,7 @@ class PublishTask(object):
         
         this function is not connected to any signals/slots, so it can be called without recursively calling other things
         """
-    	#print "setActive called on "+str(self)+" with state: "+str(active_state)
+
         self._active = active_state
 
     @active.setter
@@ -208,7 +208,8 @@ class PublishTask(object):
         * ``False``: Set the item to be inactive
         * ``None``: Clear the item's state, rely on inheritance within the tree
         """
-        print "active called on "+str(self)+" with state: "+str(active_state)
+        #print "active called on "+str(self)+" with state: "+str(active_state)
+
         self._active = active_state
 
     @property
@@ -287,12 +288,13 @@ class PublishTask(object):
         return self._name or self.plugin.name
        
     def status(self):
-		"""The display status of the task."""
-		return self._status
-	
+        """The display status of the task."""
+        return self._status
+
     def setStatus(self, status):
-		'''sets the status of the task (from the ui/manager)'''
-		self._status = status
+        '''sets the status of the task (from the ui/manager)'''
+        self._status = status
+
 
     @name.setter
     def name(self, new_name):

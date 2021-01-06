@@ -9,11 +9,11 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 
-import sgtk
+import sgtk #@UnresolvedImport
 import logging
 from pprint import pprint
 
-from ..Debug import DebugHandler
+#from ..Debug import DebugHandler
 
 logger = sgtk.platform.get_logger(__name__)
 
@@ -121,9 +121,10 @@ class PublishLogWrapper(object):
         #even negating this value does not allow publish logs to the root app log
 
         self._handler = PublishLogHandler(progress_widget)
+        #self._phospheneLogHandler=sgtk.custom_debug_handler
         
-        self._logger.addHandler(DebugHandler())
-        logger.debug("installed phosphene debug handler for plugin debug")
+        #self._logger.addHandler(self._phospheneLogHandler)
+        #logger.debug("installed phosphene debug handler for plugin debug")
 
         # and handle it in the UI
         self._logger.addHandler(self._handler)
@@ -136,9 +137,7 @@ class PublishLogWrapper(object):
         #else:
         #    self._handler.setLevel(logging.INFO)
 
-        formatter = logging.Formatter(
-            "[%(levelname)s %(basename)s] %(message)s"
-        )
+        formatter = logging.Formatter("[%(levelname)s %(basename)s] %(message)s")
         self._handler.setFormatter(formatter)
 
     def shut_down(self):
@@ -146,6 +145,7 @@ class PublishLogWrapper(object):
         Deallocate logging
         """
         self._logger.removeHandler(self._handler)
+        #self._logger.removeHandler(self._phospheneLogHandler)
 
     @property
     def logger(self):

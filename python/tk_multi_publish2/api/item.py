@@ -14,7 +14,7 @@ import inspect
 import os
 import tempfile
 
-import sgtk
+import sgtk #@UnresolvedImport
 
 from .data import PublishData
 from .task import PublishTask
@@ -39,17 +39,23 @@ def _is_qt_pixmap_usable():
 
     try:
         # We can fail importing if the engine doesn't even support Qt.
-        from sgtk.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui #@UnresolvedImport
+
         # We can also fail at using the QPixmap object in an engine like tk-shell
         # that exposes a mocked-Qt module.
         QtGui.QPixmap
     except Exception as e:
-        logger.warning("Could not import QtGui.QPixmap. Thumbnail validation will not be available: %s", e)
+        logger.warning(
+            "Could not import QtGui.QPixmap. Thumbnail validation will not be available: %s",
+            e,
+        )
         _qt_pixmap_is_usable = False
     else:
         # If QApplication is not available, we can't create QPixmap objects.
         if QtGui.QApplication.instance() is None:
-            logger.warning("QApplication does not exist. Thumbnail validation will not be available.")
+            logger.warning(
+                "QApplication does not exist. Thumbnail validation will not be available."
+            )
             _qt_pixmap_is_usable = False
         else:
             _qt_pixmap_is_usable = True
@@ -106,9 +112,7 @@ class PublishItem(object):
 
         # create the instance
         new_item = PublishItem(
-            item_dict["name"],
-            item_dict["type_spec"],
-            item_dict["type_display"]
+            item_dict["name"], item_dict["type_spec"], item_dict["type_display"]
         )
 
         # populate all the instance data from the dictionary
@@ -127,9 +131,7 @@ class PublishItem(object):
         for child_dict in item_dict["children"]:
             new_item._children.append(
                 PublishItem.from_dict(
-                    child_dict,
-                    serialization_version,
-                    parent=new_item
+                    child_dict, serialization_version, parent=new_item
                 )
             )
 
@@ -137,10 +139,11 @@ class PublishItem(object):
 
         # global
         new_item._global_properties = PublishData.from_dict(
-            item_dict["global_properties"])
+            item_dict["global_properties"]
+        )
 
         # local
-        for (k, prop_dict) in item_dict["local_properties"].iteritems():
+        for (k, prop_dict) in item_dict["local_properties"].items():
             new_item._local_properties[k] = PublishData.from_dict(prop_dict)
 
         new_item._parent = parent
@@ -149,18 +152,13 @@ class PublishItem(object):
         # set the context
         if item_dict["context"]:
             new_item._context = sgtk.Context.from_dict(
-                sgtk.platform.current_bundle().sgtk,
-                item_dict["context"]
+                sgtk.platform.current_bundle().sgtk, item_dict["context"]
             )
 
         # finally, create any tasks for this item
         for task_dict in item_dict["tasks"]:
             new_item._tasks.append(
-                PublishTask.from_dict(
-                    task_dict,
-                    serialization_version,
-                    item=new_item
-                )
+                PublishTask.from_dict(task_dict, serialization_version, item=new_item)
             )
 
         return new_item
@@ -216,7 +214,7 @@ class PublishItem(object):
             if os.path.exists(temp_file):
                 try:
                     os.remove(temp_file)
-                except Exception, e:
+                except Exception as e:
                     logger.warning(
                         "Could not remove temporary file '%s': %s" % (temp_file, e)
                     )
@@ -230,7 +228,7 @@ class PublishItem(object):
         """
 
         converted_local_properties = {}
-        for (k, prop) in self._local_properties.iteritems():
+        for (k, prop) in self._local_properties.items():
             converted_local_properties[k] = prop.to_dict()
 
         context_value = None
@@ -348,12 +346,7 @@ class PublishItem(object):
             item name in a DCC or a file name.
         """
 
-        child_item = PublishItem(
-            name,
-            type_spec,
-            type_display,
-            parent=self
-        )
+        child_item = PublishItem(name, type_spec, type_display, parent=self)
         self._children.append(child_item)
 
         return child_item
@@ -413,9 +406,7 @@ class PublishItem(object):
             return None
 
         temp_path = tempfile.NamedTemporaryFile(
-            suffix=".jpg",
-            prefix="sgtk_thumb",
-            delete=False
+            suffix=".jpg", prefix="sgtk_thumb", delete=False
         ).name
         success = self.thumbnail.save(temp_path)
 
@@ -508,14 +499,12 @@ class PublishItem(object):
             return path
 
         # defer import until needed and to avoid issues when running without UI
-        from sgtk.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui #@UnresolvedImport
 
         try:
             icon = QtGui.QPixmap(path)
         except Exception as e:
-            logger.warning(
-                "%r: Could not load icon '%s': %s" % (self, path, e)
-            )
+            logger.warning("%r: Could not load icon '%s': %s" % (self, path, e))
             return None
         else:
             return None if icon.isNull() else path
@@ -712,10 +701,17 @@ class PublishItem(object):
             get_pixmap=lambda: self._icon_pixmap,
             set_pixmap=lambda pixmap: setattr(self, "_icon_pixmap", pixmap),
             get_parent_pixmap=lambda: self.parent.icon,
-            default_image_path=":/tk_multi_publish2/item.png"
+            default_image_path=":/tk_multi_publish2/item.png",
         )
 
-    def _get_image(self, get_img_path, get_pixmap, set_pixmap, get_parent_pixmap, default_image_path):
+    def _get_image(
+        self,
+        get_img_path,
+        get_pixmap,
+        set_pixmap,
+        get_parent_pixmap,
+        default_image_path,
+    ):
         """
         Retrieves the image for the icon or thumbnail of this item.
 
@@ -736,16 +732,15 @@ class PublishItem(object):
             return None
 
         # defer import until needed and to avoid issues when running without UI
-        from sgtk.platform.qt import QtGui
+        from sgtk.platform.qt import QtGui #@UnresolvedImport
 
         if get_img_path() and not get_pixmap():
             # we have a path but haven't yet created the pixmap. create it
             try:
                 set_pixmap(QtGui.QPixmap(get_img_path()))
-            except Exception, e:
+            except Exception as e:
                 logger.warning(
-                    "%r: Could not load icon '%s': %s" %
-                    (self, get_img_path(), e)
+                    "%r: Could not load icon '%s': %s" % (self, get_img_path(), e)
                 )
 
         if get_pixmap():
@@ -857,8 +852,7 @@ class PublishItem(object):
         # It's not a crime to turn persistence off, so raise an error when
         # actually trying it on an invalid item.
         if is_persistent and (not self.parent or not self.parent.is_root):
-            raise sgtk.TankError(
-                "Only top-level tree items can be made persistent.")
+            raise sgtk.TankError("Only top-level tree items can be made persistent.")
 
         self._persistent = is_persistent
 
@@ -889,9 +883,13 @@ class PublishItem(object):
     def status(self):
         """The display status of the task."""
         return self._status
-	
+
     def setStatus(self, status):
-        '''sets the status of the task (from the ui/manager)'''
+        '''sets the status of the task (from the ui/manager)
+        
+           there are confusing singals & slots that prevent the ui from sucessfully
+           setting the status of an item. this function can safely be called from
+		'''
         self._status = status
 
     @property
@@ -926,7 +924,7 @@ class PublishItem(object):
             get_pixmap=lambda: self._thumbnail_pixmap,
             set_pixmap=lambda pixmap: setattr(self, "_thumbnail_pixmap", pixmap),
             get_parent_pixmap=lambda: self.parent.thumbnail,
-            default_image_path=None
+            default_image_path=None,
         )
 
     @thumbnail.setter
@@ -1053,13 +1051,13 @@ class PublishItem(object):
         if not hook_object:
             raise AttributeError(
                 "Could not determine the current publish plugin when accessing "
-                "an item's local properties. Item: %s" % (self,))
+                "an item's local properties. Item: %s" % (self,)
+            )
 
-        if not hasattr(hook_object, 'id'):
+        if not hasattr(hook_object, "id"):
             raise AttributeError(
                 "Could not determine the id for this publish plugin. This is "
-                "required for storing local properties. Plugin: %s" %
-                (hook_object,)
+                "required for storing local properties. Plugin: %s" % (hook_object,)
             )
 
         plugin_id = hook_object.id

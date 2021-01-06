@@ -84,6 +84,17 @@ class BasicFilePublishPlugin(HookBaseClass):
             when registering the new publish. If not available, the publishing
             will fall back to the :meth:`tank.util.register_publish` logic.
 
+        publish_fields - If set, will be passed to
+            :meth:`tank.util.register_publish` as the ``sg_fields`` keyword
+            argument. A dictionary of additional fields that should be used
+            for the publish entity in Shotgun.
+
+        publish_kwargs - If set, will be used to update the dictionary of kwargs
+            passed to :meth:`tank.util.register_publish`. Because this
+            dictionary updates the kwargs built from other ``property``
+            and ``local_property`` values, any kwargs set in this property will
+            supersede those values.
+
     NOTE: accessing these ``publish_*`` values on the item does not necessarily
     return the value used during publish execution. Use the corresponding
     ``get_publish_*`` methods which include fallback logic when no property is
@@ -112,11 +123,7 @@ class BasicFilePublishPlugin(HookBaseClass):
         """
 
         # look for icon one level up from this hook's folder in "icons" folder
-        return os.path.join(
-            self.disk_location,
-            "icons",
-            "publish.png"
-        )
+        return os.path.join(self.disk_location, "icons", "publish.png")
 
     @property
     def name(self):
@@ -158,7 +165,9 @@ class BasicFilePublishPlugin(HookBaseClass):
         A file can be published multiple times however only the most recent
         publish will be available to other users. Warnings will be provided
         during validation if there are previous publishes.
-        """ % (loader_url,)
+        """ % (
+            loader_url,
+        )
 
     @property
     def settings(self):
@@ -183,6 +192,7 @@ class BasicFilePublishPlugin(HookBaseClass):
             "File Types": {
                 "type": "list",
                 "default": [
+                    ["Alias File", "wire"],
                     ["Alembic Cache", "abc"],
                     ["3dsmax Scene", "max"],
                     ["NukeStudio Project", "hrox"],
@@ -191,17 +201,19 @@ class BasicFilePublishPlugin(HookBaseClass):
                     ["Motion Builder FBX", "fbx"],
                     ["Nuke Script", "nk"],
                     ["Photoshop Image", "psd", "psb"],
+                    ["VRED Scene", "vpb", "vpe", "osb"],
                     ["Rendered Image", "dpx", "exr"],
                     ["Texture", "tiff", "tx", "tga", "dds"],
                     ["Image", "jpeg", "jpg", "png"],
                     ["Movie", "mov", "mp4"],
+                    ["PDF", "pdf"],
                 ],
                 "description": (
                     "List of file types to include. Each entry in the list "
                     "is a list in which the first entry is the Shotgun "
                     "published file type and subsequent entries are file "
                     "extensions that should be associated."
-                )
+                ),
             },
         }
 
@@ -250,11 +262,7 @@ class BasicFilePublishPlugin(HookBaseClass):
         # log the accepted file and display a button to reveal it in the fs
         self.logger.info(
             "File publisher plugin accepted: %s" % (path,),
-            extra={
-                "action_show_folder": {
-                    "path": path
-                }
-            }
+            extra={"action_show_folder": {"path": path}},
         )
 
         # return the accepted info
@@ -295,13 +303,14 @@ class BasicFilePublishPlugin(HookBaseClass):
             item.context,
             publish_path,
             publish_name,
-            filters=["sg_status_list", "is_not", None]
+            filters=["sg_status_list", "is_not", None],
         )
 
         if publishes:
 
             self.logger.debug(
-                "Conflicting publishes: %s" % (pprint.pformat(publishes),))
+                "Conflicting publishes: %s" % (pprint.pformat(publishes),)
+            )
 
             publish_template = self.get_publish_template(settings, item)
 
@@ -330,9 +339,9 @@ class BasicFilePublishPlugin(HookBaseClass):
                         "action_show_more_info": {
                             "label": "Show Conflicts",
                             "tooltip": "Show conflicting publishes in Shotgun",
-                            "text": conflict_info
+                            "text": conflict_info,
                         }
-                    }
+                    },
                 )
 
         self.logger.info("A Publish will be created in Shotgun and linked to:")
@@ -362,13 +371,19 @@ class BasicFilePublishPlugin(HookBaseClass):
         publish_name = self.get_publish_name(settings, item)
         publish_version = self.get_publish_version(settings, item)
         publish_path = self.get_publish_path(settings, item)
-        publish_dependencies = self.get_publish_dependencies(settings, item)
+        publish_dependencies_paths = self.get_publish_dependencies(settings, item)
         publish_user = self.get_publish_user(settings, item)
+        publish_fields = self.get_publish_fields(settings, item)
+        # catch-all for any extra kwargs that should be passed to register_publish.
+        publish_kwargs = self.get_publish_kwargs(settings, item)
 
-        # if the parent item has a publish path, include it in the list of
+        # if the parent item has publish data, get it id to include it in the list of
         # dependencies
-        if "sg_publish_path" in item.parent.properties:
-            publish_dependencies.append(item.parent.properties.sg_publish_path)
+        publish_dependencies_ids = []
+        if "sg_publish_data" in item.parent.properties:
+            publish_dependencies_ids.append(
+                item.parent.properties.sg_publish_data["id"]
+            )
 
         # handle copying of work to publish if templates are in play
         self._copy_work_to_publish(settings, item)
@@ -385,8 +400,13 @@ class BasicFilePublishPlugin(HookBaseClass):
             "version_number": publish_version,
             "thumbnail_path": item.get_thumbnail_as_path(),
             "published_file_type": publish_type,
-            "dependency_paths": publish_dependencies
+            "dependency_paths": publish_dependencies_paths,
+            "dependency_ids": publish_dependencies_ids,
+            "sg_fields": publish_fields,
         }
+
+        # add extra kwargs
+        publish_data.update(publish_kwargs)
 
         # log the publish data for debugging
         self.logger.debug(
@@ -395,15 +415,14 @@ class BasicFilePublishPlugin(HookBaseClass):
                 "action_show_more_info": {
                     "label": "Publish Data",
                     "tooltip": "Show the complete Publish data dictionary",
-                    "text": "<pre>%s</pre>" % (pprint.pformat(publish_data),)
+                    "text": "<pre>%s</pre>" % (pprint.pformat(publish_data),),
                 }
-            }
+            },
         )
 
         # create the publish and stash it in the item properties for other
         # plugins to use.
-        item.properties.sg_publish_data = sgtk.util.register_publish(
-            **publish_data)
+        item.properties.sg_publish_data = sgtk.util.register_publish(**publish_data)
         self.logger.info("Publish registered!")
         self.logger.debug(
             "Shotgun Publish data...",
@@ -411,9 +430,10 @@ class BasicFilePublishPlugin(HookBaseClass):
                 "action_show_more_info": {
                     "label": "Shotgun Publish Data",
                     "tooltip": "Show the complete Shotgun Publish Entity dictionary",
-                    "text": "<pre>%s</pre>" % (pprint.pformat(item.properties.sg_publish_data),)
+                    "text": "<pre>%s</pre>"
+                    % (pprint.pformat(item.properties.sg_publish_data),),
                 }
-            }
+            },
         )
 
     def finalize(self, settings, item):
@@ -435,10 +455,10 @@ class BasicFilePublishPlugin(HookBaseClass):
 
         # ensure conflicting publishes have their status cleared
         publisher.util.clear_status_for_conflicting_publishes(
-            item.context, publish_data)
+            item.context, publish_data
+        )
 
-        self.logger.info(
-            "Cleared the status of all previous, conflicting publishes")
+        self.logger.info("Cleared the status of all previous, conflicting publishes")
 
         path = item.properties.path
         self.logger.info(
@@ -447,9 +467,9 @@ class BasicFilePublishPlugin(HookBaseClass):
                 "action_show_in_shotgun": {
                     "label": "Show Publish",
                     "tooltip": "Open the Publish in Shotgun.",
-                    "entity": publish_data
+                    "entity": publish_data,
                 }
-            }
+            },
         )
 
     def get_publish_template(self, settings, item):
@@ -553,12 +573,13 @@ class BasicFilePublishPlugin(HookBaseClass):
             if missing_keys:
                 self.logger.warning(
                     "Not enough keys to apply work fields (%s) to "
-                    "publish template (%s)" % (work_fields, publish_template))
+                    "publish template (%s)" % (work_fields, publish_template)
+                )
             else:
                 publish_path = publish_template.apply_fields(work_fields)
                 self.logger.debug(
-                    "Used publish template to determine the publish path: %s" %
-                    (publish_path,)
+                    "Used publish template to determine the publish path: %s"
+                    % (publish_path,)
                 )
         else:
             self.logger.debug("publish_template: %s" % publish_template)
@@ -567,7 +588,8 @@ class BasicFilePublishPlugin(HookBaseClass):
         if not publish_path:
             publish_path = path
             self.logger.debug(
-                "Could not validate a publish template. Publishing in place.")
+                "Could not validate a publish template. Publishing in place."
+            )
 
         return publish_path
 
@@ -597,8 +619,7 @@ class BasicFilePublishPlugin(HookBaseClass):
 
         if work_template:
             if work_template.validate(path):
-                self.logger.debug(
-                    "Work file template configured and matches file.")
+                self.logger.debug("Work file template configured and matches file.")
                 work_fields = work_template.get_fields(path)
 
         if work_fields:
@@ -606,12 +627,10 @@ class BasicFilePublishPlugin(HookBaseClass):
             # publish information
             if "version" in work_fields:
                 publish_version = work_fields.get("version")
-                self.logger.debug(
-                    "Retrieved version number via work file template.")
+                self.logger.debug("Retrieved version number via work file template.")
 
         else:
-            self.logger.debug(
-                "Using path info hook to determine publish version.")
+            self.logger.debug("Using path info hook to determine publish version.")
             publish_version = publisher.util.get_version_number(path)
             if publish_version is None:
                 publish_version = 1
@@ -645,10 +664,7 @@ class BasicFilePublishPlugin(HookBaseClass):
             name_path = path
             is_sequence = False
 
-        return publisher.util.get_publish_name(
-            name_path,
-            sequence=is_sequence
-        )
+        return publisher.util.get_publish_name(name_path, sequence=is_sequence)
 
     def get_publish_dependencies(self, settings, item):
         """
@@ -689,6 +705,41 @@ class BasicFilePublishPlugin(HookBaseClass):
         :return: A user entity dictionary or ``None`` if not defined.
         """
         return item.get_property("publish_user", default_value=None)
+
+    def get_publish_fields(self, settings, item):
+        """
+        Get additional fields that should be used for the publish. This
+        dictionary is passed on to :meth:`tank.util.register_publish` as the
+        ``sg_fields`` keyword argument.
+
+        If publish_fields is not defined as a ``property`` or
+        ``local_property``, this method will return an empty dictionary.
+
+        :param settings: This plugin instance's configured settings
+        :param item: The item to determine the publish template for
+
+        :return: A dictionary of field names and values for those fields.
+        """
+        return item.get_property("publish_fields", default_value={})
+
+    def get_publish_kwargs(self, settings, item):
+        """
+        Get kwargs that should be passed to :meth:`tank.util.register_publish`.
+        These kwargs will be used to update the kwarg dictionary that is passed
+        when calling :meth:`tank.util.register_publish`, meaning that any value
+        set here will supersede a value already retrieved from another
+        ``property`` or ``local_property``.
+
+        If publish_kwargs is not defined as a ``property`` or
+        ``local_property``, this method will return an empty dictionary.
+
+        :param settings: This plugin instance's configured settings
+        :param item: The item to determine the publish template for
+
+        :return: A dictionary of kwargs to be passed to
+                 :meth:`tank.util.register_publish`.
+        """
+        return item.get_property("publish_kwargs", default_value={})
 
     ############################################################################
     # protected methods
@@ -779,13 +830,13 @@ class BasicFilePublishPlugin(HookBaseClass):
                 copy_file(work_file, publish_file)
             except Exception:
                 raise Exception(
-                    "Failed to copy work file from '%s' to '%s'.\n%s" %
-                    (work_file, publish_file, traceback.format_exc())
+                    "Failed to copy work file from '%s' to '%s'.\n%s"
+                    % (work_file, publish_file, traceback.format_exc())
                 )
 
             self.logger.debug(
-                "Copied work file '%s' to publish file '%s'." %
-                (work_file, publish_file)
+                "Copied work file '%s' to publish file '%s'."
+                % (work_file, publish_file)
             )
 
     def _get_next_version_info(self, path, item):
@@ -878,11 +929,7 @@ class BasicFilePublishPlugin(HookBaseClass):
         elif os.path.exists(next_version_path):
             self.logger.warning(
                 "The next version of the path already exists",
-                extra={
-                    "action_show_folder": {
-                        "path": next_version_path
-                    }
-                }
+                extra={"action_show_folder": {"path": next_version_path}},
             )
             return None
 

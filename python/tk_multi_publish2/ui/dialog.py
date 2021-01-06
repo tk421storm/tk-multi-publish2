@@ -6,7 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from tank.platform.qt import QtCore, QtGui
+from tank.platform.qt import QtCore, QtGui #@UnresolvedImport
 from os.path import dirname, realpath, join, exists
 
 #get this modules install location
@@ -715,6 +715,7 @@ class Ui_Dialog(object):
 		for item in deliveryList:#.insert(0, ''):
 			self.deliveryType.addItem(item)
 
+
 from ..thumbnail import Thumbnail
 from ..progress_status_label import ProgressStatusLabel
 from ..publish_description_edit import PublishDescriptionEdit
@@ -722,5 +723,5 @@ from ..custom_settings_widget import CustomSettingsWidget
 from ..publish_tree_widget import PublishTreeWidget
 from ..settings_widget import SettingsWidget
 from ..drop_area import DropAreaFrame
-from ..qtwidgets import ElidedLabel, ContextWidget, TaskUpdate
+from ..qtwidgets import ElidedLabel, ContextWidget
 from . import resources_rc
